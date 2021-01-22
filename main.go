@@ -10,10 +10,8 @@ import (
 	"net"
 	"os"
 	"os/signal"
-	"strconv"
 	"strings"
 	"syscall"
-	"time"
 
 	"github.com/multiformats/go-multiaddr"
 	"github.com/pkg/errors"
@@ -60,22 +58,6 @@ func main() {
 		logger.Error("failed joining global room")
 		return
 	}
-
-	go func() {
-		var counter int
-		ticker := time.Tick(time.Second)
-
-		for {
-			<-ticker
-
-			logger.Info("sending message")
-			if err := node.SendMessage(ctx, strconv.Itoa(counter)); err != nil {
-				logger.Error("failed sending message", zap.Error(err))
-			}
-
-			counter++
-		}
-	}()
 
 	if cfg.APIPort != 0 {
 		logger.Info("starting gRPC API server")

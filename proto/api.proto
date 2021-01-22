@@ -5,7 +5,8 @@ option go_package = "gen/api";
 
 service Api {
   rpc Ping(PingRequest) returns (PingResponse);
-  rpc SubscribeToNewMessages(SubscribeToNewMessagesRequest) returns (stream ChatMessage);
+  rpc SendMessage(ChatMessage) returns (SendMessageResponse);
+  rpc SubscribeToNewMessages(SubscribeToNewMessagesRequest) returns (stream ChatMessageWithTimestamp);
 }
 
 message PingRequest {}
@@ -14,8 +15,17 @@ message PingResponse {
 }
 
 message SubscribeToNewMessagesRequest {}
-message ChatMessage {
+
+message SendMessageResponse {
+  bool sent = 1;
+}
+
+message ChatMessageWithTimestamp {
   string senderID = 1;
   int64 timestamp = 2;
   string value = 3;
+}
+
+message ChatMessage {
+  string value = 1;
 }

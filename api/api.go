@@ -30,6 +30,16 @@ func (s *Server) Ping(ctx context.Context, request *apigen.PingRequest) (*apigen
 	}, nil
 }
 
+func (s *Server) SendMessage(ctx context.Context, msg *apigen.ChatMessage) (*apigen.SendMessageResponse, error) {
+	s.logger.Info("handling SendMessage")
+
+	if err := s.node.SendMessage(ctx, msg.Value); err != nil {
+		return nil, err
+	}
+
+	return &apigen.SendMessageResponse{Sent: true}, nil
+}
+
 func (s *Server) SubscribeToNewMessages(request *apigen.SubscribeToNewMessagesRequest, stream apigen.Api_SubscribeToNewMessagesServer) error {
 	s.logger.Info("handling SubscribeToNewMessages")
 
@@ -39,7 +49,7 @@ func (s *Server) SubscribeToNewMessages(request *apigen.SubscribeToNewMessagesRe
 	for {
 		msg := <-sub.Channel()
 
-		err := stream.Send(&apigen.ChatMessage{
+		err := stream.Send(&apigen.ChatMessageWithTimestamp{
 			SenderID:  msg.SenderID.Pretty(),
 			Timestamp: msg.Timestamp.Unix(),
 			Value:     msg.Value,
