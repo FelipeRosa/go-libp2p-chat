@@ -75,7 +75,21 @@ func main() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGKILL, syscall.SIGTERM)
 
-	<-sigChan
+	sub := node.SubscribeToNewMessages()
+
+	for {
+		select {
+		case <-sigChan:
+			return
+
+		case msg := <-sub.Channel():
+			logger.Info("new message",
+				zap.String("senderID", msg.SenderID.Pretty()),
+				zap.Time("timestamp", msg.Timestamp),
+				zap.String("value", msg.Value),
+			)
+		}
+	}
 }
 
 func parseArgs() (cfg, error) {

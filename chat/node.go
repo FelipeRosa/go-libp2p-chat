@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/libp2p/go-libp2p"
@@ -17,11 +18,31 @@ import (
 	"go.uber.org/zap"
 )
 
+type NewMessageSubscription struct {
+	messageCh chan Message
+	doneCh    chan struct{}
+	closed    bool
+}
+
+func (sub *NewMessageSubscription) Channel() <-chan Message {
+	return sub.messageCh
+}
+
+func (sub *NewMessageSubscription) Close() {
+	sub.doneCh <- struct{}{}
+	sub.closed = true
+}
+
+func (sub *NewMessageSubscription) Closed() bool {
+	return sub.closed
+}
+
 type Node interface {
 	Start(ctx context.Context, port uint16) error
 	Bootstrap(ctx context.Context, nodeAddrs []multiaddr.Multiaddr) error
 	SendMessage(ctx context.Context, msg string) error
 	GetMessages() []Message
+	SubscribeToNewMessages() *NewMessageSubscription
 	JoinRoom(ctx context.Context, roomName string) error
 	Shutdown() error
 }
@@ -35,6 +56,9 @@ type node struct {
 	topic        *pubsub.Topic
 	subscription *pubsub.Subscription
 	messageStore *MessageStore
+
+	newMessageSubscriptionsLock sync.Mutex
+	newMessageSubscriptions     []*NewMessageSubscription
 
 	findPeersDoneChan chan<- struct{}
 	findPeersErrChan  <-chan error
@@ -196,6 +220,19 @@ func (n *node) GetMessages() []Message {
 	return n.messageStore.Messages()
 }
 
+func (n *node) SubscribeToNewMessages() *NewMessageSubscription {
+	sub := &NewMessageSubscription{
+		messageCh: make(chan Message),
+		doneCh:    make(chan struct{}, 1),
+	}
+
+	defer n.newMessageSubscriptionsLock.Unlock()
+	n.newMessageSubscriptionsLock.Lock()
+	n.newMessageSubscriptions = append(n.newMessageSubscriptions, sub)
+
+	return sub
+}
+
 func (n *node) JoinRoom(ctx context.Context, roomName string) error {
 	if n.subscription != nil {
 		return errors.New("changing rooms is not implemented yet")
@@ -252,5 +289,33 @@ func (n *node) roomSubLoop(ctx context.Context) {
 			continue
 		}
 		n.messageStore.Push(msg)
+
+		n.publishNewMessageToSubscribers(msg)
+	}
+}
+
+func (n *node) publishNewMessageToSubscribers(msg Message) {
+	defer n.newMessageSubscriptionsLock.Unlock()
+	n.newMessageSubscriptionsLock.Lock()
+
+	var subscriptions []*NewMessageSubscription
+
+	// Filter out closed subscriptions
+	for _, sub := range n.newMessageSubscriptions {
+		select {
+		case <-sub.doneCh:
+			close(sub.messageCh)
+
+		default:
+			subscriptions = append(subscriptions, sub)
+		}
+	}
+	n.newMessageSubscriptions = subscriptions
+
+	for _, sub := range n.newMessageSubscriptions {
+		// Try publishing. Subscription will miss the message if blocked.
+		select {
+		case sub.messageCh <- msg:
+		}
 	}
 }
