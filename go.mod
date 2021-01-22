@@ -10,5 +10,6 @@ require (
 	github.com/libp2p/go-libp2p-pubsub v0.4.1
 	github.com/multiformats/go-multiaddr v0.3.1
 	github.com/pkg/errors v0.9.1
+	github.com/stretchr/testify v1.6.1
 	go.uber.org/zap v1.16.0
 )

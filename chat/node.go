@@ -2,7 +2,9 @@ package chat
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/libp2p/go-libp2p"
 	libp2phost "github.com/libp2p/go-libp2p-core/host"
@@ -19,6 +21,7 @@ type Node interface {
 	Start(ctx context.Context, port uint16) error
 	Bootstrap(ctx context.Context, nodeAddrs []multiaddr.Multiaddr) error
 	SendMessage(ctx context.Context, msg string) error
+	GetMessages() []Message
 	JoinRoom(ctx context.Context, roomName string) error
 	Shutdown() error
 }
@@ -31,6 +34,7 @@ type node struct {
 	ps           *pubsub.PubSub
 	topic        *pubsub.Topic
 	subscription *pubsub.Subscription
+	messageStore *MessageStore
 
 	findPeersDoneChan chan<- struct{}
 	findPeersErrChan  <-chan error
@@ -42,8 +46,9 @@ func NewNode(logger *zap.Logger) Node {
 	}
 
 	return &node{
-		logger: logger,
-		host:   nil,
+		logger:       logger,
+		host:         nil,
+		messageStore: NewMessageStore(3),
 	}
 }
 
@@ -169,11 +174,26 @@ func (n *node) Bootstrap(ctx context.Context, nodeAddrs []multiaddr.Multiaddr) e
 }
 
 func (n *node) SendMessage(ctx context.Context, msg string) error {
-	if err := n.topic.Publish(ctx, []byte(msg)); err != nil {
+	m := Message{
+		SenderID:  n.host.ID(),
+		Timestamp: time.Now(),
+		Value:     msg,
+	}
+
+	msgJSON, err := json.Marshal(m)
+	if err != nil {
+		return errors.Wrap(err, "marshalling message")
+	}
+
+	if err := n.topic.Publish(ctx, msgJSON); err != nil {
 		return errors.Wrap(err, "publishing message")
 	}
 
 	return nil
+}
+
+func (n *node) GetMessages() []Message {
+	return n.messageStore.Messages()
 }
 
 func (n *node) JoinRoom(ctx context.Context, roomName string) error {
@@ -216,16 +236,21 @@ func (n *node) Shutdown() error {
 
 func (n *node) roomSubLoop(ctx context.Context) {
 	for {
-		msg, err := n.subscription.Next(ctx)
+		subMsg, err := n.subscription.Next(ctx)
 		if err != nil {
 			n.logger.Error("failed receiving room message", zap.Error(err))
 			continue
 		}
 
-		if msg.ReceivedFrom == n.host.ID() {
+		if subMsg.ReceivedFrom == n.host.ID() {
 			continue
 		}
 
-		fmt.Printf("message from %s: %s\n", msg.ReceivedFrom.Pretty(), string(msg.Data))
+		var msg Message
+		if err := json.Unmarshal(subMsg.Data, &msg); err != nil {
+			n.logger.Warn("skipping message: failed unmarshalling")
+			continue
+		}
+		n.messageStore.Push(msg)
 	}
 }
