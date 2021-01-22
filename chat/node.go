@@ -87,7 +87,7 @@ func (n *node) Start(ctx context.Context, port uint16) error {
 	n.host = host
 
 	n.logger.Debug("creating pubsub")
-	ps, err := pubsub.NewGossipSub(ctx, n.host)
+	ps, err := pubsub.NewGossipSub(ctx, n.host, pubsub.WithMessageSignaturePolicy(pubsub.StrictSign))
 	if err != nil {
 		return errors.Wrap(err, "creating pubsub")
 	}
