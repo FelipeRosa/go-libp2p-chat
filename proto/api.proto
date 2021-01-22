@@ -1,0 +1,21 @@
+syntax = "proto3";
+package api;
+
+option go_package = "gen/api";
+
+service Api {
+  rpc Ping(PingRequest) returns (PingResponse);
+  rpc SubscribeToNewMessages(SubscribeToNewMessagesRequest) returns (stream ChatMessage);
+}
+
+message PingRequest {}
+message PingResponse {
+  bool ok = 1;
+}
+
+message SubscribeToNewMessagesRequest {}
+message ChatMessage {
+  string senderID = 1;
+  int64 timestamp = 2;
+  string value = 3;
+}

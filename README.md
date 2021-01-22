@@ -7,11 +7,11 @@ Peer-to-peer chat node built using libp2p as a learning project.
 Start some bootstrap node(s)
 
 ```shell
-go run main.go -p PORT1
+go run main.go -port PORT1
 ```
 
 Start some node(s) which communicate with bootstrap nodes to initially find some peers:
 
 ```shell
-go run main.go -p PORT2 -a BOOTSTRAP_NODE_ADDR
+go run main.go -port PORT2 -bootstrap-addrs BOOTSTRAP_NODE_ADDR
 ```

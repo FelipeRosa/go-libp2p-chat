@@ -4,7 +4,10 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"libp2pchat/api"
 	"libp2pchat/chat"
+	apigen "libp2pchat/gen/api"
+	"net"
 	"os"
 	"os/signal"
 	"strconv"
@@ -15,10 +18,12 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 )
 
 type cfg struct {
 	NodePort       uint16
+	APIPort        uint16
 	BootstrapNodes []multiaddr.Multiaddr
 }
 
@@ -72,29 +77,35 @@ func main() {
 		}
 	}()
 
+	if cfg.APIPort != 0 {
+		logger.Info("starting gRPC API server")
+		apiListener, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", cfg.APIPort))
+		if err != nil {
+			logger.Error("failed starting gRPC API server", zap.Error(err))
+			return
+		}
+
+		grpcServer := grpc.NewServer()
+		apigen.RegisterApiServer(grpcServer, api.NewServer(logger, node))
+
+		go func() {
+			if err := grpcServer.Serve(apiListener); err != nil {
+				logger.Error("failed starting to serve gRPC requests", zap.Error(err))
+				// TODO: signal this error to the main thread through a channel
+				//		 otherwise we will end up with a running node and an offline API.
+			}
+		}()
+	}
+
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGKILL, syscall.SIGTERM)
-
-	sub := node.SubscribeToNewMessages()
-
-	for {
-		select {
-		case <-sigChan:
-			return
-
-		case msg := <-sub.Channel():
-			logger.Info("new message",
-				zap.String("senderID", msg.SenderID.Pretty()),
-				zap.Time("timestamp", msg.Timestamp),
-				zap.String("value", msg.Value),
-			)
-		}
-	}
+	<-sigChan
 }
 
 func parseArgs() (cfg, error) {
-	nodePort := flag.Uint("p", 0, "node port")
-	bootstrapNodes := flag.String("a", "", "comma separated list of bootstrap node addresses")
+	nodePort := flag.Uint("port", 0, "node port")
+	apiPort := flag.Uint("api-port", 0, "api port")
+	bootstrapNodes := flag.String("bootstrap-addrs", "", "comma separated list of bootstrap node addresses")
 	flag.Parse()
 
 	if *nodePort == 0 {
@@ -116,6 +127,7 @@ func parseArgs() (cfg, error) {
 
 	return cfg{
 		NodePort:       uint16(*nodePort),
+		APIPort:        uint16(*apiPort),
 		BootstrapNodes: bootstrapNodeAddrs,
 	}, nil
 }
