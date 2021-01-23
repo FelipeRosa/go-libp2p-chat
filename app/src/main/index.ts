@@ -30,8 +30,10 @@ let state = new State()
 
 app.whenReady().then(() => {
     const window = new BrowserWindow({
-        width: 800,
-        height: 600,
+        title: "libp2p chat",
+        width: 640,
+        height: 480,
+        resizable: false,
         webPreferences: {
             nodeIntegration: true,
         },

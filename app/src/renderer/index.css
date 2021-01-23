@@ -1,0 +1,102 @@
+html, body, #root {
+    padding: 0;
+    margin: 0;
+
+    width: 100%;
+    height: 100%;
+
+    font-family: sans-serif;
+    font-size: 14px;
+    background-color: #282a36;
+    color: #f8f8f2;
+}
+
+:focus {
+    outline: none;
+}
+
+input[type="text"] {
+    background-color: #44475a;
+    color: #f8f8f2;
+    border: none;
+}
+
+button, input[type="button"] {
+    background-color: #bd93f9;
+    font-weight: bold;
+    color: #f8f8f2;
+    border: none;
+}
+
+button::placeholder, input[type="button"]::placeholder {
+    color: rgba(248, 248, 242, 0.3);
+}
+
+.chat-messages {
+    padding: 8px 0;
+
+    display: flex;
+    flex-flow: column nowrap;
+    align-items: flex-start;
+
+    overflow-x: hidden;
+    overflow-y: auto;
+    overflow-wrap: anywhere;
+
+    width: 640px;
+    max-width: 640px;
+    height: 382px;
+    max-height: 382px;
+}
+
+.chat-message {
+    margin-bottom: 4px;
+    padding: 4px;
+
+    background-color: #44475a;
+    border-radius: 8px;
+}
+
+.chat-message-timestamp {
+    display: inline-block;
+    margin-right: 4px;
+    font-size: 12px;
+    color: #717fb3;
+}
+
+.chat-message-sender {
+    display: inline-block;
+    margin-right: 4px;
+    font-weight: bold;
+}
+
+.chat-message-value {
+    display: inline-block;
+}
+
+.chat-send {
+    display: flex;
+    align-items: flex-end;
+    flex-flow: row nowrap;
+
+    height: 38px;
+}
+
+.chat-send-input {
+    order: 1;
+    flex: 1;
+
+    font-size: 14px;
+    height: 36px;
+}
+
+.chat-send-btn {
+    order: 2;
+
+    font-size: 14px;
+    height: 100%;
+}
+
+.room-name {
+    font-size: 16px;
+}
