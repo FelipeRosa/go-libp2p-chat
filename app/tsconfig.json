@@ -3,9 +3,19 @@
     "target": "es6",
     "module": "commonjs",
     "jsx": "react",
+    "lib": [
+      "dom"
+    ],
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
-  }
+  },
+  "include": [
+    "src",
+    "gen"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }
