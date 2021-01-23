@@ -2,8 +2,8 @@ package api
 
 import (
 	"context"
-	"libp2pchat/chat"
-	apigen "libp2pchat/gen/api"
+	"github.com/FelipeRosa/go-libp2p-chat/go-node/chat"
+	apigen "github.com/FelipeRosa/go-libp2p-chat/go-node/gen/api"
 
 	"go.uber.org/zap"
 )
