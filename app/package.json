@@ -30,7 +30,7 @@
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.2.4",
-    "electron": "^11.2.0",
+    "electron": "^11.2.1",
     "get-port": "^5.1.1",
     "google-protobuf": "^3.14.0",
     "react": "^17.0.1",
