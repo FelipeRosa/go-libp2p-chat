@@ -32,16 +32,20 @@ const App = () => {
 
         return (
             <div>
-                <div>
-                    <div>
-                        Bootstrap node address (if empty, starts a bootstrap
-                        node and does not connect to any networks)
-                    </div>
-                    <div>
-                        <input type={"text"} ref={addrInput} />
-                    </div>
+                <div style={{ marginBottom: "16px" }}>
+                    <span>Bootstrap nodes address</span>
+                    {" "}
+                    <span style={{color: "rgba(248, 248, 242, 0.6)"}}>
+                        (if empty, starts a bootstrap node and does not connect
+                        to any networks)
+                    </span>
                 </div>
-                <div>
+                <div style={{ marginBottom: "8px" }}>
+                    <input
+                        placeholder={"Bootstrap node addresses..."}
+                        type={"text"}
+                        ref={addrInput}
+                    />
                     <input
                         type={"button"}
                         value={"Connect"}
@@ -69,11 +73,47 @@ const App = () => {
 
         const inputBox = React.createRef<HTMLInputElement>()
 
+        const formatTimestamp = (ts: number): string => {
+            const d = new Date(ts * 1000)
+            const h = d.getHours().toString().padStart(2, "0")
+            const m = d.getMinutes().toString().padStart(2, "0")
+
+            return `${h}:${m}`
+        }
+
+        console.log(document.body.clientHeight)
+
         return (
             <div>
-                <div>
-                    <input type={"text"} ref={inputBox} />
+                <div className={"room-info"}>
+                    <div className={"room-name"}>Room Name</div>
+                </div>
+
+                <div className={"chat-messages"}>
+                    {messages.map((msg, index) => (
+                        <div key={index} className={"chat-message"}>
+                            <div className={"chat-message-timestamp"}>
+                                {formatTimestamp(msg.timestamp)}
+                            </div>
+                            <div className={"chat-message-sender"}>
+                                {msg.senderId}
+                            </div>
+                            <div className={"chat-message-value"}>
+                                {msg.value}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                <div className={"chat-send"}>
                     <input
+                        className={"chat-send-input"}
+                        type={"text"}
+                        placeholder={"Write message..."}
+                        ref={inputBox}
+                    />
+                    <input
+                        className={"chat-send-btn"}
                         type={"button"}
                         value={"Send"}
                         onClick={() => {
@@ -96,34 +136,6 @@ const App = () => {
                             }
                         }}
                     />
-                </div>
-
-                <div>
-                    {messages.map((msg, index) => (
-                        <div key={index}>
-                            <div
-                                style={{
-                                    display: "inline-block",
-                                    marginRight: "4px",
-                                }}
-                            >
-                                {new Date(
-                                    msg.timestamp * 1000,
-                                ).toLocaleTimeString()}
-                            </div>
-                            <div
-                                style={{
-                                    display: "inline-block",
-                                    marginRight: "4px",
-                                }}
-                            >
-                                {msg.senderId}:
-                            </div>
-                            <div style={{ display: "inline-block" }}>
-                                {msg.value}
-                            </div>
-                        </div>
-                    ))}
                 </div>
             </div>
         )
