@@ -1,10 +1,15 @@
 import { ChatMessage } from "../common/ipc"
 import { AppState } from "./entities"
 
-export type Msg = {
-    type: "new-message"
-    message: ChatMessage
-}
+export type Msg =
+    | {
+          type: "new-message"
+          message: ChatMessage
+      }
+    | {
+          type: "connected"
+          address: string
+      }
 
 export function reducer(prevState: AppState, msg: Msg): AppState {
     switch (msg.type) {
@@ -15,6 +20,12 @@ export function reducer(prevState: AppState, msg: Msg): AppState {
             return {
                 ...prevState,
                 chat: { messages },
+            }
+
+        case "connected":
+            return {
+                ...prevState,
+                connected: true,
             }
 
         default:

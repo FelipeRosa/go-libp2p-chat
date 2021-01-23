@@ -7,17 +7,55 @@ import "./index.css"
 import { reducer } from "./reducer"
 
 const App = () => {
-    const [state, dispatch] = useReducer(reducer, { chat: { messages: [] } })
+    const [state, dispatch] = useReducer(reducer, {
+        connected: false,
+        chat: { messages: [] },
+    })
 
     useEffect(() => {
         ipcRenderer.on("chat.new-message", (_e, msg: ChatMessage) => {
             dispatch({ type: "new-message", message: msg })
         })
 
+        ipcRenderer.on("chat.connected", (_e, address: string) => {
+            dispatch({ type: "connected", address })
+        })
+
         return () => {
             ipcRenderer.removeAllListeners("chat.new-message")
+            ipcRenderer.removeAllListeners("chat.connected")
         }
     }, [state])
+
+    const Connect = () => {
+        const addrInput = React.createRef<HTMLInputElement>()
+
+        return (
+            <div>
+                <div>Bootstrap node address</div>
+                <div>
+                    <input type={"text"} ref={addrInput} />
+                </div>
+                <div>
+                    <input
+                        type={"button"}
+                        value={"Connect"}
+                        onClick={() => {
+                            if (
+                                addrInput.current !== null &&
+                                addrInput.current.value.length > 0
+                            ) {
+                                ipcRenderer.send(
+                                    "chat.connect",
+                                    addrInput.current.value,
+                                )
+                            }
+                        }}
+                    />
+                </div>
+            </div>
+        )
+    }
 
     const Messages = () => {
         const {
@@ -47,7 +85,7 @@ const App = () => {
 
     return (
         <AppStateContext.Provider value={{ state, dispatch }}>
-            <Messages />
+            {state.connected ? <Messages /> : <Connect />}
         </AppStateContext.Provider>
     )
 }
