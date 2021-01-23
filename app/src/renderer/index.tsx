@@ -32,19 +32,21 @@ const App = () => {
 
         return (
             <div>
-                <div>Bootstrap node address</div>
                 <div>
-                    <input type={"text"} ref={addrInput} />
+                    <div>
+                        Bootstrap node address (if empty, starts a bootstrap
+                        node and does not connect to any networks)
+                    </div>
+                    <div>
+                        <input type={"text"} ref={addrInput} />
+                    </div>
                 </div>
                 <div>
                     <input
                         type={"button"}
                         value={"Connect"}
                         onClick={() => {
-                            if (
-                                addrInput.current !== null &&
-                                addrInput.current.value.length > 0
-                            ) {
+                            if (addrInput.current !== null) {
                                 ipcRenderer.send(
                                     "chat.connect",
                                     addrInput.current.value,
@@ -62,23 +64,67 @@ const App = () => {
             state: {
                 chat: { messages },
             },
+            dispatch,
         } = useContext(AppStateContext)
+
+        const inputBox = React.createRef<HTMLInputElement>()
 
         return (
             <div>
-                <table>
+                <div>
+                    <input type={"text"} ref={inputBox} />
+                    <input
+                        type={"button"}
+                        value={"Send"}
+                        onClick={() => {
+                            if (
+                                inputBox.current !== null &&
+                                inputBox.current.value.trimEnd().length > 0
+                            ) {
+                                const msg = inputBox.current.value.trimEnd()
+                                ipcRenderer.send("chat.send", msg)
+                                inputBox.current.value = ""
+
+                                dispatch({
+                                    type: "new-message",
+                                    message: {
+                                        senderId: "You",
+                                        timestamp: Number(new Date()) / 1000,
+                                        value: msg,
+                                    },
+                                })
+                            }
+                        }}
+                    />
+                </div>
+
+                <div>
                     {messages.map((msg, index) => (
-                        <tr key={index}>
-                            <td>
+                        <div key={index}>
+                            <div
+                                style={{
+                                    display: "inline-block",
+                                    marginRight: "4px",
+                                }}
+                            >
                                 {new Date(
                                     msg.timestamp * 1000,
                                 ).toLocaleTimeString()}
-                            </td>
-                            <td>{msg.senderId}:</td>
-                            <td>{msg.value}</td>
-                        </tr>
+                            </div>
+                            <div
+                                style={{
+                                    display: "inline-block",
+                                    marginRight: "4px",
+                                }}
+                            >
+                                {msg.senderId}:
+                            </div>
+                            <div style={{ display: "inline-block" }}>
+                                {msg.value}
+                            </div>
+                        </div>
                     ))}
-                </table>
+                </div>
             </div>
         )
     }

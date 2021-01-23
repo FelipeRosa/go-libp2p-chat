@@ -12,6 +12,10 @@ gen: clean
 	--grpc_out=grpc_js:gen \
 	../go-node/proto/api.proto
 
+go-node:
+	@cd ../go-node && make build
+	@cp ../go-node/chat-gonode .
+
 clean:
 	@rm -rf dist
 	@rm -rf gen
