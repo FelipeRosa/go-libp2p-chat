@@ -1,7 +1,10 @@
+import * as grpc from "@grpc/grpc-js"
 import { app, BrowserWindow, Menu } from "electron"
 import { ApiClient } from "../gen/api_grpc_pb"
-import * as grpc from "@grpc/grpc-js"
-import {ChatMessageWithTimestamp, SubscribeToNewMessagesRequest} from "../gen/api_pb"
+import {
+    ChatMessageWithTimestamp,
+    SubscribeToNewMessagesRequest,
+} from "../gen/api_pb"
 
 app.whenReady().then(() => {
     const window = new BrowserWindow({
@@ -25,7 +28,9 @@ app.whenReady().then(() => {
     const newMessagesStream = apiClient.subscribeToNewMessages(
         new SubscribeToNewMessagesRequest(),
     )
-    newMessagesStream.on("data", (d: ChatMessageWithTimestamp) => console.log("data", d.getValue()))
+    newMessagesStream.on("data", (d: ChatMessageWithTimestamp) =>
+        console.log("data", d.getValue()),
+    )
     newMessagesStream.on("end", () => console.log("stream ended"))
 })
 
