@@ -33,7 +33,6 @@ app.whenReady().then(() => {
         title: "libp2p chat",
         width: 640,
         height: 480,
-        resizable: false,
         webPreferences: {
             nodeIntegration: true,
         },
