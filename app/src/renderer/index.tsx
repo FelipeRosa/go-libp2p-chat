@@ -80,6 +80,26 @@ const App = () => {
             return `${h}:${m}`
         }
 
+        const sendMsg = () => {
+            if (
+                inputBox.current !== null &&
+                inputBox.current.value.trimEnd().length > 0
+            ) {
+                const msg = inputBox.current.value.trimEnd()
+                ipcRenderer.send("chat.send", msg)
+                inputBox.current.value = ""
+
+                dispatch({
+                    type: "new-message",
+                    message: {
+                        senderId: "You",
+                        timestamp: Number(new Date()) / 1000,
+                        value: msg,
+                    },
+                })
+            }
+        }
+
         return (
             <div className={"chat"}>
                 <div className={"room-info"}>
@@ -107,31 +127,20 @@ const App = () => {
                         className={"chat-send-input"}
                         type={"text"}
                         placeholder={"Write message..."}
+                        autoFocus={true}
+                        onBlur={(e) => e.currentTarget.focus()}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                                sendMsg()
+                            }
+                        }}
                         ref={inputBox}
                     />
                     <input
                         className={"chat-send-btn"}
                         type={"button"}
                         value={"Send"}
-                        onClick={() => {
-                            if (
-                                inputBox.current !== null &&
-                                inputBox.current.value.trimEnd().length > 0
-                            ) {
-                                const msg = inputBox.current.value.trimEnd()
-                                ipcRenderer.send("chat.send", msg)
-                                inputBox.current.value = ""
-
-                                dispatch({
-                                    type: "new-message",
-                                    message: {
-                                        senderId: "You",
-                                        timestamp: Number(new Date()) / 1000,
-                                        value: msg,
-                                    },
-                                })
-                            }
-                        }}
+                        onClick={sendMsg}
                     />
                 </div>
             </div>
