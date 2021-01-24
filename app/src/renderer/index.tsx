@@ -28,37 +28,36 @@ const App = () => {
     }, [state])
 
     const Connect = () => {
-        const addrInput = React.createRef<HTMLInputElement>()
+        const addrInput = React.createRef<HTMLTextAreaElement>()
 
         return (
-            <div>
-                <div style={{ marginBottom: "16px" }}>
-                    <span>Bootstrap nodes address</span>
-                    {" "}
-                    <span style={{color: "rgba(248, 248, 242, 0.6)"}}>
+            <div className={"connect-form"}>
+                <div className={"connect-node-addrs-label"}>
+                    <span>Bootstrap nodes address</span>{" "}
+                    <span style={{ color: "rgba(248, 248, 242, 0.6)" }}>
                         (if empty, starts a bootstrap node and does not connect
                         to any networks)
                     </span>
                 </div>
-                <div style={{ marginBottom: "8px" }}>
-                    <input
-                        placeholder={"Bootstrap node addresses..."}
-                        type={"text"}
-                        ref={addrInput}
-                    />
-                    <input
-                        type={"button"}
-                        value={"Connect"}
-                        onClick={() => {
-                            if (addrInput.current !== null) {
-                                ipcRenderer.send(
-                                    "chat.connect",
-                                    addrInput.current.value,
-                                )
-                            }
-                        }}
-                    />
-                </div>
+                <textarea
+                    className={"connect-node-addrs-input"}
+                    placeholder={"Bootstrap node addresses..."}
+                    rows={4}
+                    ref={addrInput}
+                />
+                <input
+                    className={"connect-node-addrs-btn"}
+                    type={"button"}
+                    value={"Connect"}
+                    onClick={() => {
+                        if (addrInput.current !== null) {
+                            ipcRenderer.send(
+                                "chat.connect",
+                                addrInput.current.value,
+                            )
+                        }
+                    }}
+                />
             </div>
         )
     }
@@ -81,10 +80,8 @@ const App = () => {
             return `${h}:${m}`
         }
 
-        console.log(document.body.clientHeight)
-
         return (
-            <div>
+            <div className={"chat"}>
                 <div className={"room-info"}>
                     <div className={"room-name"}>Room Name</div>
                 </div>

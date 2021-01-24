@@ -1,5 +1,4 @@
 html, body, #root {
-    padding: 0;
     margin: 0;
 
     width: 100%;
@@ -8,6 +7,9 @@ html, body, #root {
     font-family: sans-serif;
     font-size: 14px;
     background-color: #282a36;
+
+    overflow: hidden;
+
     color: #f8f8f2;
 }
 
@@ -15,10 +17,12 @@ html, body, #root {
     outline: none;
 }
 
-input[type="text"] {
+input[type="text"], input[type="textarea"], textarea {
     background-color: #44475a;
     color: #f8f8f2;
     border: none;
+
+    padding: 0 4px;
 }
 
 button, input[type="button"] {
@@ -26,16 +30,19 @@ button, input[type="button"] {
     font-weight: bold;
     color: #f8f8f2;
     border: none;
+
+    padding: 4px;
 }
 
-button::placeholder, input[type="button"]::placeholder {
-    color: rgba(248, 248, 242, 0.3);
+.chat {
+    display: flex;
+    flex-flow: column nowrap;
+    height: 100%;
 }
 
 .chat-messages {
-    padding: 8px 0;
-
     display: flex;
+    flex: 1 1 80%;
     flex-flow: column nowrap;
     align-items: flex-start;
 
@@ -43,18 +50,15 @@ button::placeholder, input[type="button"]::placeholder {
     overflow-y: auto;
     overflow-wrap: anywhere;
 
-    width: 640px;
-    max-width: 640px;
-    height: 382px;
-    max-height: 382px;
+    width: 100%;
 }
 
 .chat-message {
-    margin-bottom: 4px;
+    margin: 4px 8px;
     padding: 4px;
 
     background-color: #44475a;
-    border-radius: 8px;
+    border-radius: 4px;
 }
 
 .chat-message-timestamp {
@@ -72,31 +76,60 @@ button::placeholder, input[type="button"]::placeholder {
 
 .chat-message-value {
     display: inline-block;
+    align-self: flex-end;
 }
 
 .chat-send {
     display: flex;
+    flex: 1 1 40px;
     align-items: flex-end;
     flex-flow: row nowrap;
 
-    height: 38px;
+    max-height: 40px;
 }
 
 .chat-send-input {
     order: 1;
     flex: 1;
-
     font-size: 14px;
-    height: 36px;
+    height: 100%;
+
+    padding: 0 8px !important;
 }
 
 .chat-send-btn {
     order: 2;
-
     font-size: 14px;
     height: 100%;
 }
 
 .room-name {
+    padding: 8px;
     font-size: 16px;
+    background-color: #44475a;
+}
+
+.connect-form {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+
+    padding: 8px;
+}
+
+.connect-node-addrs-label {
+    flex: 1;
+    margin-bottom: 16px;
+    font-size: 14px;
+}
+
+.connect-node-addrs-input {
+    width: 100%;
+    font-size: 14px;
+    resize: none;
+
+    margin-bottom: 4px;
+}
+
+.connect-node-addrs-btn {
 }
