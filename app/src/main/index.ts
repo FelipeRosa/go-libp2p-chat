@@ -39,7 +39,7 @@ app.whenReady().then(() => {
     })
 
     window
-        .loadFile("./dist/index.html")
+        .loadFile("./build/index.html")
         .then(() => console.log("window loaded"))
 
     const menu = Menu.buildFromTemplate([

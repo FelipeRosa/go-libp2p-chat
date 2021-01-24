@@ -18,4 +18,5 @@ go-node:
 
 clean:
 	@rm -rf dist
-	@rm -rf gen
+	@rm -rf build
+	@rm -rf chat-gonode
