@@ -37,14 +37,27 @@ func (sub *NewMessageSubscription) Closed() bool {
 	return sub.closed
 }
 
+type validator struct{}
+
+func (v *validator) Validate(string, []byte) error {
+	return nil
+}
+
+func (v *validator) Select(string, [][]byte) (int, error) {
+	return 0, nil
+}
+
 type Node interface {
+	ID() string
 	Start(ctx context.Context, port uint16) error
 	Bootstrap(ctx context.Context, nodeAddrs []multiaddr.Multiaddr) error
 	SendMessage(ctx context.Context, msg string) error
 	GetMessages() []Message
 	SubscribeToNewMessages() *NewMessageSubscription
 	JoinRoom(ctx context.Context, roomName string) error
-	ID() string
+	CurrentRoomName() string
+	SetNickname(ctx context.Context, nickname string) error
+	GetNickname(ctx context.Context, peerID string) (string, error)
 	Shutdown() error
 }
 
@@ -60,6 +73,10 @@ type node struct {
 
 	newMessageSubscriptionsLock sync.Mutex
 	newMessageSubscriptions     []*NewMessageSubscription
+	currentRoomName             string
+
+	nicknameStoreMutex   sync.Mutex
+	nicknameStoreWaiting bool
 
 	findPeersDoneChan chan<- struct{}
 	findPeersErrChan  <-chan error
@@ -75,6 +92,13 @@ func NewNode(logger *zap.Logger) Node {
 		host:         nil,
 		messageStore: NewMessageStore(3),
 	}
+}
+
+func (n *node) ID() string {
+	if n.host == nil {
+		return ""
+	}
+	return n.host.ID().Pretty()
 }
 
 func (n *node) Start(ctx context.Context, port uint16) error {
@@ -126,10 +150,12 @@ func (n *node) Bootstrap(ctx context.Context, nodeAddrs []multiaddr.Multiaddr) e
 		dht.BootstrapPeers(bootstrappers...),
 		dht.ProtocolPrefix(ProtocolID),
 		dht.Mode(dht.ModeAutoServer),
+		dht.Validator(&validator{}),
 	)
 	if err != nil {
 		return errors.Wrap(err, "creating routing DHT")
 	}
+
 	n.kadDHT = kadDHT
 
 	if err := kadDHT.Bootstrap(ctx); err != nil {
@@ -260,14 +286,71 @@ func (n *node) JoinRoom(ctx context.Context, roomName string) error {
 		go n.roomSubLoop(ctx)
 	}
 
+	n.currentRoomName = roomName
+
 	return nil
 }
 
-func (n *node) ID() string {
-	if n.host == nil {
-		return ""
+func (n *node) CurrentRoomName() string {
+	return n.currentRoomName
+}
+
+func (n *node) SetNickname(ctx context.Context, nickname string) error {
+	// TODO: should publish the nickname change to the rooms we are connected to
+	// (https://github.com/FelipeRosa/go-libp2p-chat/issues/14)
+	if len(n.kadDHT.RoutingTable().ListPeers()) == 0 {
+		n.logger.Debug("postponing storing nickname in DHT: no peers connected")
+
+		n.nicknameStoreMutex.Lock()
+		defer n.nicknameStoreMutex.Unlock()
+		if n.nicknameStoreWaiting {
+			return nil
+		}
+
+		go func() {
+			tick := time.Tick(time.Second)
+
+		retryLoop:
+			for {
+				select {
+				case <-tick:
+					if len(n.kadDHT.RoutingTable().ListPeers()) == 0 {
+						n.logger.Debug("postponing storing nickname in DHT: no peers connected")
+						continue
+					}
+
+					// TODO: return error channel?
+					if err := n.storeNickname(ctx, nickname); err != nil {
+						n.logger.Error("failed storing nickname in DHT", zap.Error(err))
+					}
+					break retryLoop
+
+				case <-ctx.Done():
+					n.logger.Debug("stopping nickname store thread: context done")
+					break retryLoop
+				}
+			}
+
+			n.nicknameStoreMutex.Lock()
+			defer n.nicknameStoreMutex.Unlock()
+			n.nicknameStoreWaiting = false
+		}()
+
+		return nil
 	}
-	return n.host.ID().Pretty()
+
+	if err := n.storeNickname(ctx, nickname); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (n *node) GetNickname(ctx context.Context, peerID string) (string, error) {
+	nickname, err := n.kadDHT.GetValue(ctx, fmt.Sprintf("chat/%s_nickname", peerID))
+	if err != nil {
+		return "", errors.Wrap(err, "getting peer nickname from DHT")
+	}
+	return string(nickname), nil
 }
 
 func (n *node) Shutdown() error {
@@ -296,8 +379,10 @@ func (n *node) roomSubLoop(ctx context.Context) {
 			n.logger.Warn("skipping message: failed unmarshalling")
 			continue
 		}
-		n.messageStore.Push(msg)
 
+		// Overwrite the sender ID
+		msg.SenderID = subMsg.GetFrom()
+		n.messageStore.Push(msg)
 		n.publishNewMessageToSubscribers(msg)
 	}
 }
@@ -326,4 +411,14 @@ func (n *node) publishNewMessageToSubscribers(msg Message) {
 		case sub.messageCh <- msg:
 		}
 	}
+}
+
+func (n *node) storeNickname(ctx context.Context, nickname string) error {
+	n.logger.Debug("storing nickname in DHT")
+	err := n.kadDHT.PutValue(ctx, fmt.Sprintf("chat/%s_nickname", n.ID()), []byte(nickname))
+	if err != nil {
+		return errors.Wrap(err, "storing nickname in DHT")
+	}
+
+	return nil
 }

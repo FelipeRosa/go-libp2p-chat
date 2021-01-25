@@ -23,15 +23,13 @@ func NewServer(logger *zap.Logger, node chat.Node) *Server {
 	}
 }
 
-func (s *Server) Ping(ctx context.Context, request *apigen.PingRequest) (*apigen.PingResponse, error) {
+func (s *Server) Ping(context.Context, *apigen.PingRequest) (*apigen.PingResponse, error) {
 	s.logger.Info("handling Ping")
 
-	return &apigen.PingResponse{
-		Ok: true,
-	}, nil
+	return &apigen.PingResponse{}, nil
 }
 
-func (s *Server) SendMessage(ctx context.Context, msg *apigen.ChatMessage) (*apigen.SendMessageResponse, error) {
+func (s *Server) SendMessage(ctx context.Context, msg *apigen.SendMessageRequest) (*apigen.SendMessageResponse, error) {
 	s.logger.Info("handling SendMessage")
 
 	if err := s.node.SendMessage(ctx, msg.Value); err != nil {
@@ -41,7 +39,7 @@ func (s *Server) SendMessage(ctx context.Context, msg *apigen.ChatMessage) (*api
 	return &apigen.SendMessageResponse{Sent: true}, nil
 }
 
-func (s *Server) SubscribeToNewMessages(request *apigen.SubscribeToNewMessagesRequest, stream apigen.Api_SubscribeToNewMessagesServer) error {
+func (s *Server) SubscribeToNewMessages(_ *apigen.SubscribeToNewMessagesRequest, stream apigen.Api_SubscribeToNewMessagesServer) error {
 	s.logger.Info("handling SubscribeToNewMessages")
 
 	sub := s.node.SubscribeToNewMessages()
@@ -50,8 +48,8 @@ func (s *Server) SubscribeToNewMessages(request *apigen.SubscribeToNewMessagesRe
 	for {
 		msg := <-sub.Channel()
 
-		err := stream.Send(&apigen.ChatMessageWithTimestamp{
-			SenderID:  msg.SenderID.Pretty(),
+		err := stream.Send(&apigen.ChatMessage{
+			SenderId:  msg.SenderID.Pretty(),
 			Timestamp: msg.Timestamp.Unix(),
 			Value:     msg.Value,
 		})
@@ -64,6 +62,40 @@ func (s *Server) SubscribeToNewMessages(request *apigen.SubscribeToNewMessagesRe
 	return nil
 }
 
-func (s *Server) GetNodeID(ctx context.Context, request *apigen.GetNodeIDRequest) (*apigen.GetNodeIDResponse, error) {
-	return &apigen.GetNodeIDResponse{ID: s.node.ID()}, nil
+func (s *Server) GetNodeID(context.Context, *apigen.GetNodeIDRequest) (*apigen.GetNodeIDResponse, error) {
+	s.logger.Info("handling GetNodeID")
+
+	return &apigen.GetNodeIDResponse{Id: s.node.ID()}, nil
+}
+
+func (s *Server) SetNickname(_ context.Context, request *apigen.SetNicknameRequest) (*apigen.SetNicknameResponse, error) {
+	s.logger.Info("handling SetNickname")
+
+	// let it run forever passing context.Background()
+	if err := s.node.SetNickname(context.Background(), request.Nickname); err != nil {
+		s.logger.Error("failed setting nickname", zap.Error(err))
+		return nil, err
+	}
+
+	return &apigen.SetNicknameResponse{}, nil
+}
+
+func (s *Server) GetNickname(
+	ctx context.Context,
+	request *apigen.GetNicknameRequest,
+) (*apigen.GetNicknameResponse, error) {
+	nickname, err := s.node.GetNickname(ctx, request.PeerId)
+	if err != nil {
+		s.logger.Error("failed getting peer nickname", zap.Error(err))
+		return nil, err
+	}
+
+	return &apigen.GetNicknameResponse{Nickname: nickname}, nil
+}
+
+func (s *Server) GetCurrentRoomName(
+	context.Context,
+	*apigen.GetCurrentRoomNameRequest,
+) (*apigen.GetCurrentRoomNameResponse, error) {
+	return &apigen.GetCurrentRoomNameResponse{RoomName: s.node.CurrentRoomName()}, nil
 }

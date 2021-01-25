@@ -19,9 +19,12 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ApiClient interface {
 	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
-	SendMessage(ctx context.Context, in *ChatMessage, opts ...grpc.CallOption) (*SendMessageResponse, error)
+	SendMessage(ctx context.Context, in *SendMessageRequest, opts ...grpc.CallOption) (*SendMessageResponse, error)
 	SubscribeToNewMessages(ctx context.Context, in *SubscribeToNewMessagesRequest, opts ...grpc.CallOption) (Api_SubscribeToNewMessagesClient, error)
 	GetNodeID(ctx context.Context, in *GetNodeIDRequest, opts ...grpc.CallOption) (*GetNodeIDResponse, error)
+	SetNickname(ctx context.Context, in *SetNicknameRequest, opts ...grpc.CallOption) (*SetNicknameResponse, error)
+	GetNickname(ctx context.Context, in *GetNicknameRequest, opts ...grpc.CallOption) (*GetNicknameResponse, error)
+	GetCurrentRoomName(ctx context.Context, in *GetCurrentRoomNameRequest, opts ...grpc.CallOption) (*GetCurrentRoomNameResponse, error)
 }
 
 type apiClient struct {
@@ -41,7 +44,7 @@ func (c *apiClient) Ping(ctx context.Context, in *PingRequest, opts ...grpc.Call
 	return out, nil
 }
 
-func (c *apiClient) SendMessage(ctx context.Context, in *ChatMessage, opts ...grpc.CallOption) (*SendMessageResponse, error) {
+func (c *apiClient) SendMessage(ctx context.Context, in *SendMessageRequest, opts ...grpc.CallOption) (*SendMessageResponse, error) {
 	out := new(SendMessageResponse)
 	err := c.cc.Invoke(ctx, "/api.Api/SendMessage", in, out, opts...)
 	if err != nil {
@@ -66,7 +69,7 @@ func (c *apiClient) SubscribeToNewMessages(ctx context.Context, in *SubscribeToN
 }
 
 type Api_SubscribeToNewMessagesClient interface {
-	Recv() (*ChatMessageWithTimestamp, error)
+	Recv() (*ChatMessage, error)
 	grpc.ClientStream
 }
 
@@ -74,8 +77,8 @@ type apiSubscribeToNewMessagesClient struct {
 	grpc.ClientStream
 }
 
-func (x *apiSubscribeToNewMessagesClient) Recv() (*ChatMessageWithTimestamp, error) {
-	m := new(ChatMessageWithTimestamp)
+func (x *apiSubscribeToNewMessagesClient) Recv() (*ChatMessage, error) {
+	m := new(ChatMessage)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -91,14 +94,44 @@ func (c *apiClient) GetNodeID(ctx context.Context, in *GetNodeIDRequest, opts ..
 	return out, nil
 }
 
+func (c *apiClient) SetNickname(ctx context.Context, in *SetNicknameRequest, opts ...grpc.CallOption) (*SetNicknameResponse, error) {
+	out := new(SetNicknameResponse)
+	err := c.cc.Invoke(ctx, "/api.Api/SetNickname", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *apiClient) GetNickname(ctx context.Context, in *GetNicknameRequest, opts ...grpc.CallOption) (*GetNicknameResponse, error) {
+	out := new(GetNicknameResponse)
+	err := c.cc.Invoke(ctx, "/api.Api/GetNickname", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *apiClient) GetCurrentRoomName(ctx context.Context, in *GetCurrentRoomNameRequest, opts ...grpc.CallOption) (*GetCurrentRoomNameResponse, error) {
+	out := new(GetCurrentRoomNameResponse)
+	err := c.cc.Invoke(ctx, "/api.Api/GetCurrentRoomName", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ApiServer is the server API for Api service.
 // All implementations must embed UnimplementedApiServer
 // for forward compatibility
 type ApiServer interface {
 	Ping(context.Context, *PingRequest) (*PingResponse, error)
-	SendMessage(context.Context, *ChatMessage) (*SendMessageResponse, error)
+	SendMessage(context.Context, *SendMessageRequest) (*SendMessageResponse, error)
 	SubscribeToNewMessages(*SubscribeToNewMessagesRequest, Api_SubscribeToNewMessagesServer) error
 	GetNodeID(context.Context, *GetNodeIDRequest) (*GetNodeIDResponse, error)
+	SetNickname(context.Context, *SetNicknameRequest) (*SetNicknameResponse, error)
+	GetNickname(context.Context, *GetNicknameRequest) (*GetNicknameResponse, error)
+	GetCurrentRoomName(context.Context, *GetCurrentRoomNameRequest) (*GetCurrentRoomNameResponse, error)
 	mustEmbedUnimplementedApiServer()
 }
 
@@ -109,7 +142,7 @@ type UnimplementedApiServer struct {
 func (UnimplementedApiServer) Ping(context.Context, *PingRequest) (*PingResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
 }
-func (UnimplementedApiServer) SendMessage(context.Context, *ChatMessage) (*SendMessageResponse, error) {
+func (UnimplementedApiServer) SendMessage(context.Context, *SendMessageRequest) (*SendMessageResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SendMessage not implemented")
 }
 func (UnimplementedApiServer) SubscribeToNewMessages(*SubscribeToNewMessagesRequest, Api_SubscribeToNewMessagesServer) error {
@@ -117,6 +150,15 @@ func (UnimplementedApiServer) SubscribeToNewMessages(*SubscribeToNewMessagesRequ
 }
 func (UnimplementedApiServer) GetNodeID(context.Context, *GetNodeIDRequest) (*GetNodeIDResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetNodeID not implemented")
+}
+func (UnimplementedApiServer) SetNickname(context.Context, *SetNicknameRequest) (*SetNicknameResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetNickname not implemented")
+}
+func (UnimplementedApiServer) GetNickname(context.Context, *GetNicknameRequest) (*GetNicknameResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetNickname not implemented")
+}
+func (UnimplementedApiServer) GetCurrentRoomName(context.Context, *GetCurrentRoomNameRequest) (*GetCurrentRoomNameResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCurrentRoomName not implemented")
 }
 func (UnimplementedApiServer) mustEmbedUnimplementedApiServer() {}
 
@@ -150,7 +192,7 @@ func _Api_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{
 }
 
 func _Api_SendMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ChatMessage)
+	in := new(SendMessageRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -162,7 +204,7 @@ func _Api_SendMessage_Handler(srv interface{}, ctx context.Context, dec func(int
 		FullMethod: "/api.Api/SendMessage",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ApiServer).SendMessage(ctx, req.(*ChatMessage))
+		return srv.(ApiServer).SendMessage(ctx, req.(*SendMessageRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -176,7 +218,7 @@ func _Api_SubscribeToNewMessages_Handler(srv interface{}, stream grpc.ServerStre
 }
 
 type Api_SubscribeToNewMessagesServer interface {
-	Send(*ChatMessageWithTimestamp) error
+	Send(*ChatMessage) error
 	grpc.ServerStream
 }
 
@@ -184,7 +226,7 @@ type apiSubscribeToNewMessagesServer struct {
 	grpc.ServerStream
 }
 
-func (x *apiSubscribeToNewMessagesServer) Send(m *ChatMessageWithTimestamp) error {
+func (x *apiSubscribeToNewMessagesServer) Send(m *ChatMessage) error {
 	return x.ServerStream.SendMsg(m)
 }
 
@@ -202,6 +244,60 @@ func _Api_GetNodeID_Handler(srv interface{}, ctx context.Context, dec func(inter
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ApiServer).GetNodeID(ctx, req.(*GetNodeIDRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Api_SetNickname_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetNicknameRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ApiServer).SetNickname(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.Api/SetNickname",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ApiServer).SetNickname(ctx, req.(*SetNicknameRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Api_GetNickname_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetNicknameRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ApiServer).GetNickname(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.Api/GetNickname",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ApiServer).GetNickname(ctx, req.(*GetNicknameRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Api_GetCurrentRoomName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCurrentRoomNameRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ApiServer).GetCurrentRoomName(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.Api/GetCurrentRoomName",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ApiServer).GetCurrentRoomName(ctx, req.(*GetCurrentRoomNameRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -224,6 +320,18 @@ var Api_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetNodeID",
 			Handler:    _Api_GetNodeID_Handler,
+		},
+		{
+			MethodName: "SetNickname",
+			Handler:    _Api_SetNickname_Handler,
+		},
+		{
+			MethodName: "GetNickname",
+			Handler:    _Api_GetNickname_Handler,
+		},
+		{
+			MethodName: "GetCurrentRoomName",
+			Handler:    _Api_GetCurrentRoomName_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
