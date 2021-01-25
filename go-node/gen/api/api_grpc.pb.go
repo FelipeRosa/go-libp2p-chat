@@ -21,6 +21,7 @@ type ApiClient interface {
 	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
 	SendMessage(ctx context.Context, in *ChatMessage, opts ...grpc.CallOption) (*SendMessageResponse, error)
 	SubscribeToNewMessages(ctx context.Context, in *SubscribeToNewMessagesRequest, opts ...grpc.CallOption) (Api_SubscribeToNewMessagesClient, error)
+	GetNodeID(ctx context.Context, in *GetNodeIDRequest, opts ...grpc.CallOption) (*GetNodeIDResponse, error)
 }
 
 type apiClient struct {
@@ -81,6 +82,15 @@ func (x *apiSubscribeToNewMessagesClient) Recv() (*ChatMessageWithTimestamp, err
 	return m, nil
 }
 
+func (c *apiClient) GetNodeID(ctx context.Context, in *GetNodeIDRequest, opts ...grpc.CallOption) (*GetNodeIDResponse, error) {
+	out := new(GetNodeIDResponse)
+	err := c.cc.Invoke(ctx, "/api.Api/GetNodeID", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ApiServer is the server API for Api service.
 // All implementations must embed UnimplementedApiServer
 // for forward compatibility
@@ -88,6 +98,7 @@ type ApiServer interface {
 	Ping(context.Context, *PingRequest) (*PingResponse, error)
 	SendMessage(context.Context, *ChatMessage) (*SendMessageResponse, error)
 	SubscribeToNewMessages(*SubscribeToNewMessagesRequest, Api_SubscribeToNewMessagesServer) error
+	GetNodeID(context.Context, *GetNodeIDRequest) (*GetNodeIDResponse, error)
 	mustEmbedUnimplementedApiServer()
 }
 
@@ -103,6 +114,9 @@ func (UnimplementedApiServer) SendMessage(context.Context, *ChatMessage) (*SendM
 }
 func (UnimplementedApiServer) SubscribeToNewMessages(*SubscribeToNewMessagesRequest, Api_SubscribeToNewMessagesServer) error {
 	return status.Errorf(codes.Unimplemented, "method SubscribeToNewMessages not implemented")
+}
+func (UnimplementedApiServer) GetNodeID(context.Context, *GetNodeIDRequest) (*GetNodeIDResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetNodeID not implemented")
 }
 func (UnimplementedApiServer) mustEmbedUnimplementedApiServer() {}
 
@@ -174,6 +188,24 @@ func (x *apiSubscribeToNewMessagesServer) Send(m *ChatMessageWithTimestamp) erro
 	return x.ServerStream.SendMsg(m)
 }
 
+func _Api_GetNodeID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetNodeIDRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ApiServer).GetNodeID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.Api/GetNodeID",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ApiServer).GetNodeID(ctx, req.(*GetNodeIDRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Api_ServiceDesc is the grpc.ServiceDesc for Api service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -188,6 +220,10 @@ var Api_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SendMessage",
 			Handler:    _Api_SendMessage_Handler,
+		},
+		{
+			MethodName: "GetNodeID",
+			Handler:    _Api_GetNodeID_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

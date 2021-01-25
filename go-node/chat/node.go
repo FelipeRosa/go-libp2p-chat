@@ -44,6 +44,7 @@ type Node interface {
 	GetMessages() []Message
 	SubscribeToNewMessages() *NewMessageSubscription
 	JoinRoom(ctx context.Context, roomName string) error
+	ID() string
 	Shutdown() error
 }
 
@@ -260,6 +261,13 @@ func (n *node) JoinRoom(ctx context.Context, roomName string) error {
 	}
 
 	return nil
+}
+
+func (n *node) ID() string {
+	if n.host == nil {
+		return ""
+	}
+	return n.host.ID().Pretty()
 }
 
 func (n *node) Shutdown() error {
