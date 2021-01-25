@@ -2,6 +2,7 @@
   "name": "libp2p-chat",
   "version": "0.1.0",
   "description": "libp2p chat application",
+  "productName": "libp2p-chat",
   "main": "./build/main.js",
   "scripts": {
     "build": "webpack --config webpack.config.js",

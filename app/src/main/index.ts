@@ -1,7 +1,14 @@
 import * as grpc from "@grpc/grpc-js"
 import type { ChildProcessWithoutNullStreams } from "child_process"
 import * as child_process from "child_process"
-import { app, BrowserWindow, dialog, ipcMain, Menu } from "electron"
+import {
+    app,
+    BrowserWindow,
+    dialog,
+    ipcMain,
+    Menu,
+    MenuItemConstructorOptions,
+} from "electron"
 import getPort from "get-port"
 import * as path from "path"
 import { ApiClient } from "../../gen/api_grpc_pb"
@@ -52,36 +59,44 @@ app.whenReady().then(() => {
         .loadFile("./build/index.html")
         .then(() => console.log("window loaded"))
 
-    const menu = Menu.buildFromTemplate([
-        {
-            label: "Edit",
-            submenu: [
-                { role: "undo" },
-                { role: "redo" },
-                { type: "separator" },
-                { role: "cut" },
-                { role: "copy" },
-                { role: "paste" },
-                { role: "delete" },
-                { role: "selectAll" },
-            ],
-        },
-        {
-            label: "Help",
-            submenu: [
-                {
-                    label: "Toggle development tools",
-                    click: () => {
-                        if (window.webContents.isDevToolsOpened()) {
-                            window.webContents.closeDevTools()
-                        } else {
-                            window.webContents.openDevTools()
-                        }
-                    },
+    const menuTemplate: MenuItemConstructorOptions[] = []
+    if (process.platform === "darwin") {
+        menuTemplate.push({
+            label: app.name,
+            role: "appMenu",
+        })
+    }
+
+    menuTemplate.push({
+        label: "Edit",
+        submenu: [
+            { role: "undo" },
+            { role: "redo" },
+            { type: "separator" },
+            { role: "cut" },
+            { role: "copy" },
+            { role: "paste" },
+            { role: "delete" },
+            { role: "selectAll" },
+        ],
+    })
+
+    menuTemplate.push({
+        label: "Help",
+        submenu: [
+            {
+                label: "Toggle development tools",
+                click: () => {
+                    if (window.webContents.isDevToolsOpened()) {
+                        window.webContents.closeDevTools()
+                    } else {
+                        window.webContents.openDevTools()
+                    }
                 },
-            ],
-        },
-    ])
+            },
+        ],
+    })
+    const menu = Menu.buildFromTemplate(menuTemplate)
     Menu.setApplicationMenu(menu)
 
     ipcMain.on(

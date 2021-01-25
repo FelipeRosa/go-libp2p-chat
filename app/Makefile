@@ -32,7 +32,7 @@ package-darwin-x64: build
 		--arch x64 \
 		--out dist
 	@echo "Generating .dmg file"
-	@yarn electron-installer-dmg dist/libp2p-chat-darwin-x64 libp2p-chat --out dist --overwrite --title "libp2p-chat"
+	@node scripts/dmg-darwin.js
 	@echo "Done"
 
 build: go-node
