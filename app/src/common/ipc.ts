@@ -3,3 +3,8 @@ export type ChatMessage = {
     timestamp: number
     value: string
 }
+
+export type LocalNodeInfo = {
+    address: string
+    id: string
+}

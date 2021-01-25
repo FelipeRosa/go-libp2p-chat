@@ -1,4 +1,4 @@
-import { ChatMessage } from "../common/ipc"
+import { ChatMessage, LocalNodeInfo } from "../common/ipc"
 import { AppState } from "./entities"
 
 export type Msg =
@@ -8,7 +8,7 @@ export type Msg =
       }
     | {
           type: "connected"
-          address: string
+          localNodeInfo: LocalNodeInfo
       }
 
 export function reducer(prevState: AppState, msg: Msg): AppState {
@@ -26,6 +26,7 @@ export function reducer(prevState: AppState, msg: Msg): AppState {
             return {
                 ...prevState,
                 connected: true,
+                localNodeInfo: msg.localNodeInfo,
             }
 
         default:

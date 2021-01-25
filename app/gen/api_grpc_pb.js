@@ -26,6 +26,28 @@ function deserialize_api_ChatMessageWithTimestamp(buffer_arg) {
   return api_pb.ChatMessageWithTimestamp.deserializeBinary(new Uint8Array(buffer_arg));
 }
 
+function serialize_api_GetNodeIDRequest(arg) {
+  if (!(arg instanceof api_pb.GetNodeIDRequest)) {
+    throw new Error('Expected argument of type api.GetNodeIDRequest');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_api_GetNodeIDRequest(buffer_arg) {
+  return api_pb.GetNodeIDRequest.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
+function serialize_api_GetNodeIDResponse(arg) {
+  if (!(arg instanceof api_pb.GetNodeIDResponse)) {
+    throw new Error('Expected argument of type api.GetNodeIDResponse');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_api_GetNodeIDResponse(buffer_arg) {
+  return api_pb.GetNodeIDResponse.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
 function serialize_api_PingRequest(arg) {
   if (!(arg instanceof api_pb.PingRequest)) {
     throw new Error('Expected argument of type api.PingRequest');
@@ -104,6 +126,17 @@ var ApiService = exports.ApiService = {
     requestDeserialize: deserialize_api_SubscribeToNewMessagesRequest,
     responseSerialize: serialize_api_ChatMessageWithTimestamp,
     responseDeserialize: deserialize_api_ChatMessageWithTimestamp,
+  },
+  getNodeID: {
+    path: '/api.Api/GetNodeID',
+    requestStream: false,
+    responseStream: false,
+    requestType: api_pb.GetNodeIDRequest,
+    responseType: api_pb.GetNodeIDResponse,
+    requestSerialize: serialize_api_GetNodeIDRequest,
+    requestDeserialize: deserialize_api_GetNodeIDRequest,
+    responseSerialize: serialize_api_GetNodeIDResponse,
+    responseDeserialize: deserialize_api_GetNodeIDResponse,
   },
 };
 

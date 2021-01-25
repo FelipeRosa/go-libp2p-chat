@@ -8,17 +8,19 @@ import { ApiClient } from "../../gen/api_grpc_pb"
 import {
     ChatMessage as ApiChatMessage,
     ChatMessageWithTimestamp,
-    PingRequest,
+    GetNodeIDRequest,
     SubscribeToNewMessagesRequest,
 } from "../../gen/api_pb"
-import { ChatMessage } from "../common/ipc"
+import { ChatMessage, LocalNodeInfo } from "../common/ipc"
 
 class State {
     goNode: ChildProcessWithoutNullStreams | null
+    nodeID: string | null
     apiClient: ApiClient | null
 
     constructor() {
         this.goNode = null
+        this.nodeID = null
         this.apiClient = null
     }
 
@@ -35,6 +37,8 @@ app.whenReady().then(() => {
         title: "libp2p chat",
         width: 640,
         height: 480,
+        minWidth: 320,
+        minHeight: 240,
         webPreferences: {
             nodeIntegration: true,
         },
@@ -106,13 +110,17 @@ app.whenReady().then(() => {
                         `localhost:${apiPort}`,
                         grpc.credentials.createInsecure(),
                     )
-                    state.apiClient.ping(new PingRequest(), (err) => {
-                        if (err === null) {
-                            callback(true)
-                        } else {
-                            callback(false)
-                        }
-                    })
+                    state.apiClient.getNodeID(
+                        new GetNodeIDRequest(),
+                        (err, res) => {
+                            if (err === null) {
+                                state.nodeID = res?.getId() || null
+                                callback(true)
+                            } else {
+                                callback(false)
+                            }
+                        },
+                    )
                 } catch (e) {
                     callback(false)
                 }
@@ -136,8 +144,11 @@ app.whenReady().then(() => {
                         console.log("stream ended"),
                     )
 
-                    console.log("connected to local node")
-                    window.webContents.send("chat.connected", address)
+                    console.log(`connected to local node ID ${state.nodeID}`)
+                    window.webContents.send("chat.connected", {
+                        address: `/ip4/127.0.0.1/tcp/${nodePort}/p2p/${state.nodeID}`,
+                        id: state.nodeID,
+                    } as LocalNodeInfo)
                 } else {
                     setTimeout(() => tryConnect(tryConnectCallback), 200)
                 }

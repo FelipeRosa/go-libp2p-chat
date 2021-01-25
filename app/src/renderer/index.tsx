@@ -1,7 +1,7 @@
 import { ipcRenderer } from "electron"
 import React, { useContext, useEffect, useReducer } from "react"
 import { render } from "react-dom"
-import { ChatMessage } from "../common/ipc"
+import { ChatMessage, LocalNodeInfo } from "../common/ipc"
 import { AppStateContext } from "./context"
 import "./index.css"
 import { reducer } from "./reducer"
@@ -9,6 +9,7 @@ import { reducer } from "./reducer"
 const App = () => {
     const [state, dispatch] = useReducer(reducer, {
         connected: false,
+        localNodeInfo: null,
         chat: { messages: [] },
     })
 
@@ -17,8 +18,8 @@ const App = () => {
             dispatch({ type: "new-message", message: msg })
         })
 
-        ipcRenderer.on("chat.connected", (_e, address: string) => {
-            dispatch({ type: "connected", address })
+        ipcRenderer.on("chat.connected", (_e, localNodeInfo: LocalNodeInfo) => {
+            dispatch({ type: "connected", localNodeInfo })
         })
 
         return () => {
@@ -104,6 +105,12 @@ const App = () => {
             <div className={"chat"}>
                 <div className={"room-info"}>
                     <div className={"room-name"}>Room Name</div>
+                    {state.localNodeInfo && (
+                        <div className={"local-node-id"}>
+                            <b>Local Node Address</b>:{" "}
+                            {state.localNodeInfo.address}
+                        </div>
+                    )}
                 </div>
 
                 <div className={"chat-messages"}>
@@ -128,7 +135,6 @@ const App = () => {
                         type={"text"}
                         placeholder={"Write message..."}
                         autoFocus={true}
-                        onBlur={(e) => e.currentTarget.focus()}
                         onKeyDown={(e) => {
                             if (e.key === "Enter") {
                                 sendMsg()

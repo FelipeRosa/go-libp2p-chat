@@ -123,3 +123,39 @@ export namespace ChatMessage {
   }
 }
 
+export class GetNodeIDRequest extends jspb.Message {
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): GetNodeIDRequest.AsObject;
+  static toObject(includeInstance: boolean, msg: GetNodeIDRequest): GetNodeIDRequest.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: GetNodeIDRequest, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): GetNodeIDRequest;
+  static deserializeBinaryFromReader(message: GetNodeIDRequest, reader: jspb.BinaryReader): GetNodeIDRequest;
+}
+
+export namespace GetNodeIDRequest {
+  export type AsObject = {
+  }
+}
+
+export class GetNodeIDResponse extends jspb.Message {
+  getId(): string;
+  setId(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): GetNodeIDResponse.AsObject;
+  static toObject(includeInstance: boolean, msg: GetNodeIDResponse): GetNodeIDResponse.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: GetNodeIDResponse, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): GetNodeIDResponse;
+  static deserializeBinaryFromReader(message: GetNodeIDResponse, reader: jspb.BinaryReader): GetNodeIDResponse;
+}
+
+export namespace GetNodeIDResponse {
+  export type AsObject = {
+    id: string,
+  }
+}
+
