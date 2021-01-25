@@ -10,6 +10,7 @@ export type AppStateContextValue = {
 export const AppStateContext = createContext<AppStateContextValue>({
     state: {
         connected: false,
+        localNodeInfo: null,
         chat: { messages: [] },
     },
     dispatch: () => {},
