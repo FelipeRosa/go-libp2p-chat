@@ -5,33 +5,55 @@ option go_package = "gen/api";
 
 service Api {
   rpc Ping(PingRequest) returns (PingResponse);
-  rpc SendMessage(ChatMessage) returns (SendMessageResponse);
-  rpc SubscribeToNewMessages(SubscribeToNewMessagesRequest) returns (stream ChatMessageWithTimestamp);
+
+  rpc SendMessage(SendMessageRequest) returns (SendMessageResponse);
+  rpc SubscribeToNewMessages(SubscribeToNewMessagesRequest) returns (stream ChatMessage);
+
   rpc GetNodeID(GetNodeIDRequest) returns (GetNodeIDResponse);
+
+  rpc SetNickname(SetNicknameRequest) returns (SetNicknameResponse);
+  rpc GetNickname(GetNicknameRequest) returns (GetNicknameResponse);
+
+  rpc GetCurrentRoomName(GetCurrentRoomNameRequest) returns (GetCurrentRoomNameResponse);
 }
 
 message PingRequest {}
-message PingResponse {
-  bool ok = 1;
-}
+message PingResponse {}
 
 message SubscribeToNewMessagesRequest {}
 
+message SendMessageRequest {
+  string value = 1;
+}
 message SendMessageResponse {
   bool sent = 1;
 }
 
-message ChatMessageWithTimestamp {
-  string senderID = 1;
-  int64 timestamp = 2;
-  string value = 3;
+message ChatMessage {
+  string sender_id = 1;
+  int64 timestamp = 3;
+  string value = 4;
 }
 
-message ChatMessage {
-  string value = 1;
-}
 
 message GetNodeIDRequest {}
 message GetNodeIDResponse {
-  string ID = 1;
+  string id = 1;
+}
+
+message SetNicknameRequest {
+  string nickname = 1;
+}
+message SetNicknameResponse {}
+
+message GetNicknameRequest {
+  string peer_id = 1;
+}
+message GetNicknameResponse {
+  string nickname = 1;
+}
+
+message GetCurrentRoomNameRequest {}
+message GetCurrentRoomNameResponse {
+  string room_name = 1;
 }

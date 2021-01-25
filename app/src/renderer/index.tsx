@@ -29,10 +29,22 @@ const App = () => {
     }, [state])
 
     const Connect = () => {
+        const nicknameInput = React.createRef<HTMLInputElement>()
         const addrInput = React.createRef<HTMLTextAreaElement>()
 
         return (
-            <div className={"connect-form"}>
+            <form
+                className={"connect-form"}
+                onSubmit={(e) => e.preventDefault()}
+            >
+                <div className={"connect-nickname-label"}>Nickname*</div>
+                <input
+                    className={"connect-nickname-input"}
+                    type={"text"}
+                    ref={nicknameInput}
+                    autoFocus={true}
+                />
+
                 <div className={"connect-node-addrs-label"}>
                     <span>Bootstrap nodes address</span>{" "}
                     <span style={{ color: "rgba(248, 248, 242, 0.6)" }}>
@@ -48,18 +60,23 @@ const App = () => {
                 />
                 <input
                     className={"connect-node-addrs-btn"}
-                    type={"button"}
+                    type={"submit"}
                     value={"Connect"}
                     onClick={() => {
-                        if (addrInput.current !== null) {
+                        if (
+                            nicknameInput.current !== null &&
+                            nicknameInput.current.value.trim().length > 0 &&
+                            addrInput.current !== null
+                        ) {
                             ipcRenderer.send(
                                 "chat.connect",
+                                nicknameInput.current.value.trim(),
                                 addrInput.current.value,
                             )
                         }
                     }}
                 />
-            </div>
+            </form>
         )
     }
 
@@ -83,6 +100,7 @@ const App = () => {
 
         const sendMsg = () => {
             if (
+                state.localNodeInfo !== null &&
                 inputBox.current !== null &&
                 inputBox.current.value.trimEnd().length > 0
             ) {
@@ -93,7 +111,10 @@ const App = () => {
                 dispatch({
                     type: "new-message",
                     message: {
-                        senderId: "You",
+                        sender: {
+                            id: state.localNodeInfo.id,
+                            nickname: state.localNodeInfo.nickname,
+                        },
                         timestamp: Number(new Date()) / 1000,
                         value: msg,
                     },
@@ -104,11 +125,15 @@ const App = () => {
         return (
             <div className={"chat"}>
                 <div className={"room-info"}>
-                    <div className={"room-name"}>Room Name</div>
                     {state.localNodeInfo && (
-                        <div className={"local-node-id"}>
-                            <b>Local Node Address</b>:{" "}
-                            {state.localNodeInfo.address}
+                        <div>
+                            <div className={"room-name"}>
+                                {state.localNodeInfo.currentRoomName}
+                            </div>
+                            <div className={"local-node-id"}>
+                                <b>Local Node Address</b>:{" "}
+                                {state.localNodeInfo.address}
+                            </div>
                         </div>
                     )}
                 </div>
@@ -120,7 +145,7 @@ const App = () => {
                                 {formatTimestamp(msg.timestamp)}
                             </div>
                             <div className={"chat-message-sender"}>
-                                {msg.senderId}
+                                {msg.sender.nickname}
                             </div>
                             <div className={"chat-message-value"}>
                                 {msg.value}

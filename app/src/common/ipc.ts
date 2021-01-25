@@ -1,5 +1,8 @@
 export type ChatMessage = {
-    senderId: string
+    sender: {
+        id: string
+        nickname: string
+    }
     timestamp: number
     value: string
 }
@@ -7,4 +10,6 @@ export type ChatMessage = {
 export type LocalNodeInfo = {
     address: string
     id: string
+    nickname: string
+    currentRoomName: string
 }

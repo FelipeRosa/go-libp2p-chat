@@ -18,14 +18,14 @@ installer-linux-rpm-x64: package-linux-x64
 installer-linux-zip-x64: package-linux-x64
 	@bash scripts/zip-dist-linux.sh
 
-package-linux-x64: clean build
+package-linux-x64: build
 	@yarn electron-packager . \
 		--ignore "(node_modules|.idea)" \
 		--platform linux \
 		--arch x64 \
 		--out dist
 
-package-darwin-x64: clean build
+package-darwin-x64: build
 	@yarn electron-packager . \
 		--ignore "(node_modules|.idea)" \
 		--platform darwin \
@@ -39,7 +39,7 @@ build: go-node
 	@yarn build
 	@cp chat-gonode build
 
-gen: clean
+gen:
 	@mkdir -p gen
 	@protoc \
 	--plugin="protoc-gen-ts"=${PROTOC_GEN_TS_PATH} \
