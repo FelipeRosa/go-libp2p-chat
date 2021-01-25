@@ -101,12 +101,26 @@ button, input[type="button"] {
     order: 2;
     font-size: 14px;
     height: 100%;
+    min-width: 60px;
+}
+
+.room-info {
+    display: flex;
+    flex-direction: column;
+    background-color: #44475a;
+    padding: 8px;
+    overflow-wrap: anywhere;
 }
 
 .room-name {
-    padding: 8px;
-    font-size: 16px;
-    background-color: #44475a;
+    font-size: 14px;
+    margin-right: 16px;
+    margin-bottom: 8px;
+}
+
+.local-node-id {
+    font-size: 14px;
+    color: rgba(248, 248, 242, 0.6);
 }
 
 .connect-form {
@@ -128,8 +142,9 @@ button, input[type="button"] {
     font-size: 14px;
     resize: none;
 
-    margin-bottom: 4px;
+    margin-bottom: 8px;
 }
 
 .connect-node-addrs-btn {
+    border-radius: 4px;
 }
