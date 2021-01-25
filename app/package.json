@@ -4,7 +4,7 @@
   "description": "libp2p chat application",
   "main": "./build/main.js",
   "scripts": {
-    "build": "webpack",
+    "build": "webpack --config webpack.config.js",
     "build:dev": "webpack -w",
     "start": "electron ."
   },

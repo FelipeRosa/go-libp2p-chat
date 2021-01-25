@@ -1,11 +1,7 @@
 PROTOC_GEN_TS_PATH="./node_modules/.bin/protoc-gen-ts"
 PROTOC_GEN_GRPC_PATH="./node_modules/.bin/grpc_tools_node_protoc_plugin"
 
-package-base: clean go-node
-	@npm run build
-	@cp chat-gonode build
-
-package-linux: package-base
+package-linux: clean build
 	@npx electron-packager . \
 		--ignore "(node_modules|.idea)" \
 		--platform linux \
@@ -13,13 +9,19 @@ package-linux: package-base
 		--out dist
 	@bash scripts/zip-dist-linux.sh
 
-package-darwin: package-base
+package-darwin: clean build
 	@npx electron-packager . \
 		--ignore "(node_modules|.idea)" \
 		--platform darwin \
 		--arch x64 \
 		--out dist
-	@npx electron-installer-dmg dist/libp2p-chat-darwin-x64 libp2p-chat --out dist --overwrite
+	@echo "Generating .dmg file"
+	@npx electron-installer-dmg dist/libp2p-chat-darwin-x64 libp2p-chat --out dist --overwrite --title "libp2p-chat"
+	@echo "Done"
+
+build: go-node
+	@npm run build
+	@cp chat-gonode build
 
 gen: clean
 	@mkdir -p gen

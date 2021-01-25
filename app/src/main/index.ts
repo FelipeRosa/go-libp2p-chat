@@ -10,6 +10,7 @@ import {
     SubscribeToNewMessagesRequest,
 } from "../../gen/api_pb"
 import { ChatMessage } from "../common/ipc"
+import * as path from "path"
 
 class State {
     goNode: ChildProcessWithoutNullStreams | null
@@ -83,9 +84,13 @@ app.whenReady().then(() => {
                 `starting chat-gonode with args: ${JSON.stringify(goNodeArgs)}`,
             )
 
-            state.goNode = child_process.spawn("./chat-gonode", goNodeArgs, {
-                detached: false,
-            })
+            state.goNode = child_process.spawn(
+                path.join(app.getAppPath(), "chat-gonode"),
+                goNodeArgs,
+                {
+                    detached: false,
+                },
+            )
             state.goNode.stderr.on("data", (d: Buffer) =>
                 console.log("chat-gonode:", d.toString()),
             )
