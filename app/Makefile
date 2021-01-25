@@ -1,15 +1,31 @@
 PROTOC_GEN_TS_PATH="./node_modules/.bin/protoc-gen-ts"
 PROTOC_GEN_GRPC_PATH="./node_modules/.bin/grpc_tools_node_protoc_plugin"
 
-package-linux: clean build
+all-linux-x64: installer-linux-rpm-x64 installer-linux-deb-x64 installer-linux-zip-x64
+
+installer-linux-deb-x64: package-linux-x64
+	@yarn electron-installer-debian \
+ 		--src dist/libp2p-chat-linux-x64/ \
+	 	--dest dist/installers/ \
+	 	--arch amd64
+
+installer-linux-rpm-x64: package-linux-x64
+	@yarn electron-installer-redhat \
+ 		--src dist/libp2p-chat-linux-x64/ \
+ 		--dest dist/installers/ \
+ 		--arch x86_64
+
+installer-linux-zip-x64: package-linux-x64
+	@bash scripts/zip-dist-linux.sh
+
+package-linux-x64: clean build
 	@yarn electron-packager . \
 		--ignore "(node_modules|.idea)" \
 		--platform linux \
 		--arch x64 \
 		--out dist
-	@bash scripts/zip-dist-linux.sh
 
-package-darwin: clean build
+package-darwin-x64: clean build
 	@yarn electron-packager . \
 		--ignore "(node_modules|.idea)" \
 		--platform darwin \
