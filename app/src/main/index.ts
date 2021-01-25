@@ -51,6 +51,19 @@ app.whenReady().then(() => {
 
     const menu = Menu.buildFromTemplate([
         {
+            label: "Edit",
+            submenu: [
+                { role: "undo" },
+                { role: "redo" },
+                { type: "separator" },
+                { role: "cut" },
+                { role: "copy" },
+                { role: "paste" },
+                { role: "delete" },
+                { role: "selectAll" },
+            ],
+        },
+        {
             label: "Help",
             submenu: [
                 {
@@ -68,12 +81,12 @@ app.whenReady().then(() => {
     ])
     Menu.setApplicationMenu(menu)
 
-    ipcMain.on("chat.connect", (_e, nickname: string, address: string) => {
+    ipcMain.on("chat.connect", (_e, nickname: string, bootstrapAddrs: string) => {
         state.close()
 
         Promise.all([
-            getPort({ port: getPort.makeRange(40000, 42000) }),
-            getPort({ port: getPort.makeRange(40000, 42000) }),
+            getPort(),
+            getPort(),
         ]).then(([nodePort, apiPort]) => {
             const goNodeArgs: string[] = [
                 "-port",
@@ -81,9 +94,9 @@ app.whenReady().then(() => {
                 "-api-port",
                 apiPort.toString(),
             ]
-            if (address.length > 0) {
+            if (bootstrapAddrs.length > 0) {
                 goNodeArgs.push("-bootstrap-addrs")
-                goNodeArgs.push(address)
+                goNodeArgs.push(bootstrapAddrs.trim())
             }
 
             console.log(
