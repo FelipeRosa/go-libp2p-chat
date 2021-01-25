@@ -3,14 +3,15 @@ import type { ChildProcessWithoutNullStreams } from "child_process"
 import * as child_process from "child_process"
 import { app, BrowserWindow, ipcMain, Menu } from "electron"
 import getPort from "get-port"
+import * as path from "path"
 import { ApiClient } from "../../gen/api_grpc_pb"
 import {
     ChatMessage as ApiChatMessage,
     ChatMessageWithTimestamp,
+    PingRequest,
     SubscribeToNewMessagesRequest,
 } from "../../gen/api_pb"
 import { ChatMessage } from "../common/ipc"
-import * as path from "path"
 
 class State {
     goNode: ChildProcessWithoutNullStreams | null
@@ -98,26 +99,51 @@ app.whenReady().then(() => {
                 console.log("chat-gonode closed", state.goNode?.exitCode),
             )
 
-            // give some time for the local node to be started
-            setTimeout(() => {
-                state.apiClient = new ApiClient(
-                    `localhost:${apiPort}`,
-                    grpc.credentials.createInsecure(),
-                )
-                const newMessagesStream = state.apiClient.subscribeToNewMessages(
-                    new SubscribeToNewMessagesRequest(),
-                )
-                newMessagesStream.on("data", (msg: ChatMessageWithTimestamp) =>
-                    window.webContents.send(`chat.new-message`, {
-                        senderId: msg.getSenderid(),
-                        timestamp: msg.getTimestamp(),
-                        value: msg.getValue(),
-                    } as ChatMessage),
-                )
-                newMessagesStream.on("end", () => console.log("stream ended"))
+            const tryConnect = (callback: (connected: boolean) => void) => {
+                console.log("polling node...")
+                try {
+                    state.apiClient = new ApiClient(
+                        `localhost:${apiPort}`,
+                        grpc.credentials.createInsecure(),
+                    )
+                    state.apiClient.ping(new PingRequest(), (err) => {
+                        if (err === null) {
+                            callback(true)
+                        } else {
+                            callback(false)
+                        }
+                    })
+                } catch (e) {
+                    callback(false)
+                }
+            }
 
-                window.webContents.send("chat.connected", address)
-            }, 1000)
+            const tryConnectCallback = (connected: boolean) => {
+                if (connected && state.apiClient !== null) {
+                    const newMessagesStream = state.apiClient.subscribeToNewMessages(
+                        new SubscribeToNewMessagesRequest(),
+                    )
+                    newMessagesStream.on(
+                        "data",
+                        (msg: ChatMessageWithTimestamp) =>
+                            window.webContents.send(`chat.new-message`, {
+                                senderId: msg.getSenderid(),
+                                timestamp: msg.getTimestamp(),
+                                value: msg.getValue(),
+                            } as ChatMessage),
+                    )
+                    newMessagesStream.on("end", () =>
+                        console.log("stream ended"),
+                    )
+
+                    console.log("connected to local node")
+                    window.webContents.send("chat.connected", address)
+                } else {
+                    setTimeout(() => tryConnect(tryConnectCallback), 200)
+                }
+            }
+
+            tryConnect(tryConnectCallback)
         })
     })
 
