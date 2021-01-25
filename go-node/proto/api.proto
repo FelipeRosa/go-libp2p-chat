@@ -7,6 +7,7 @@ service Api {
   rpc Ping(PingRequest) returns (PingResponse);
   rpc SendMessage(ChatMessage) returns (SendMessageResponse);
   rpc SubscribeToNewMessages(SubscribeToNewMessagesRequest) returns (stream ChatMessageWithTimestamp);
+  rpc GetNodeID(GetNodeIDRequest) returns (GetNodeIDResponse);
 }
 
 message PingRequest {}
@@ -28,4 +29,9 @@ message ChatMessageWithTimestamp {
 
 message ChatMessage {
   string value = 1;
+}
+
+message GetNodeIDRequest {}
+message GetNodeIDResponse {
+  string ID = 1;
 }

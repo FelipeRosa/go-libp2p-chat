@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+
 	"github.com/FelipeRosa/go-libp2p-chat/go-node/chat"
 	apigen "github.com/FelipeRosa/go-libp2p-chat/go-node/gen/api"
 
@@ -61,4 +62,8 @@ func (s *Server) SubscribeToNewMessages(request *apigen.SubscribeToNewMessagesRe
 	}
 
 	return nil
+}
+
+func (s *Server) GetNodeID(ctx context.Context, request *apigen.GetNodeIDRequest) (*apigen.GetNodeIDResponse, error) {
+	return &apigen.GetNodeIDResponse{ID: s.node.ID()}, nil
 }
