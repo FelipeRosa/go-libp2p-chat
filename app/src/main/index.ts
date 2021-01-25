@@ -18,12 +18,10 @@ import { ChatMessage, LocalNodeInfo } from "../common/ipc"
 
 class State {
     goNode: ChildProcessWithoutNullStreams | null
-    nodeID: string | null
     apiClient: ApiClient | null
 
     constructor() {
         this.goNode = null
-        this.nodeID = null
         this.apiClient = null
     }
 
@@ -107,10 +105,10 @@ app.whenReady().then(() => {
             )
 
             const tryConnect = async () => {
+                let nodeId = ""
+
                 while (true) {
                     console.log("polling node...")
-
-                    let nodeId = ""
                     try {
                         state.apiClient = new ApiClient(
                             `localhost:${apiPort}`,
@@ -198,15 +196,17 @@ app.whenReady().then(() => {
                         )
                     },
                 )
-                return await getCurrentRoomName
+                const currentRoomName = await getCurrentRoomName
+
+                return [nodeId, currentRoomName]
             }
 
             tryConnect()
-                .then((roomName: string) => {
-                    console.log(`connected to local node ID ${state.nodeID}`)
+                .then(([nodeId, roomName]) => {
+                    console.log(`connected to local node ID ${nodeId}`)
                     window.webContents.send("chat.connected", {
-                        address: `/ip4/127.0.0.1/tcp/${nodePort}/p2p/${state.nodeID}`,
-                        id: state.nodeID,
+                        address: `/ip4/127.0.0.1/tcp/${nodePort}/p2p/${nodeId}`,
+                        id: nodeId,
                         nickname: nickname,
                         currentRoomName: roomName,
                     } as LocalNodeInfo)
