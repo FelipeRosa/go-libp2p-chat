@@ -7,8 +7,10 @@ import * as path from "path"
 import { ApiClient } from "../../gen/api_grpc_pb"
 import {
     ChatMessage as ApiChatMessage,
-    ChatMessageWithTimestamp,
+    GetNicknameRequest,
     GetNodeIDRequest,
+    SendMessageRequest,
+    SetNicknameRequest,
     SubscribeToNewMessagesRequest,
 } from "../../gen/api_pb"
 import { ChatMessage, LocalNodeInfo } from "../common/ipc"
@@ -67,7 +69,7 @@ app.whenReady().then(() => {
     ])
     Menu.setApplicationMenu(menu)
 
-    ipcMain.on("chat.connect", (_e, address: string) => {
+    ipcMain.on("chat.connect", (_e, nickname: string, address: string) => {
         state.close()
 
         Promise.all([
@@ -131,24 +133,45 @@ app.whenReady().then(() => {
                     const newMessagesStream = state.apiClient.subscribeToNewMessages(
                         new SubscribeToNewMessagesRequest(),
                     )
-                    newMessagesStream.on(
-                        "data",
-                        (msg: ChatMessageWithTimestamp) =>
-                            window.webContents.send(`chat.new-message`, {
-                                senderId: msg.getSenderid(),
-                                timestamp: msg.getTimestamp(),
-                                value: msg.getValue(),
-                            } as ChatMessage),
-                    )
+
+                    newMessagesStream.on("data", (msg: ApiChatMessage) => {
+                        const senderId = msg.getSenderId()
+
+                        // need to get the sender nickname
+                        const getNicknameReq = new GetNicknameRequest()
+                        getNicknameReq.setPeerId(senderId)
+                        state.apiClient?.getNickname(
+                            getNicknameReq,
+                            (err, res) => {
+                                window.webContents.send(`chat.new-message`, {
+                                    sender: {
+                                        id: senderId,
+                                        nickname:
+                                            res?.getNickname() || "Unnamed",
+                                    },
+                                    timestamp: msg.getTimestamp(),
+                                    value: msg.getValue(),
+                                } as ChatMessage)
+                            },
+                        )
+                    })
+
                     newMessagesStream.on("end", () =>
                         console.log("stream ended"),
                     )
 
-                    console.log(`connected to local node ID ${state.nodeID}`)
-                    window.webContents.send("chat.connected", {
-                        address: `/ip4/127.0.0.1/tcp/${nodePort}/p2p/${state.nodeID}`,
-                        id: state.nodeID,
-                    } as LocalNodeInfo)
+                    const setNicknameRequest = new SetNicknameRequest()
+                    setNicknameRequest.setNickname(nickname)
+                    state.apiClient.setNickname(setNicknameRequest, () => {
+                        console.log(
+                            `connected to local node ID ${state.nodeID}`,
+                        )
+                        window.webContents.send("chat.connected", {
+                            address: `/ip4/127.0.0.1/tcp/${nodePort}/p2p/${state.nodeID}`,
+                            id: state.nodeID,
+                            nickname: nickname,
+                        } as LocalNodeInfo)
+                    })
                 } else {
                     setTimeout(() => tryConnect(tryConnectCallback), 200)
                 }
@@ -159,10 +182,10 @@ app.whenReady().then(() => {
     })
 
     ipcMain.on("chat.send", (_e, msg: string) => {
-        const chatMsg = new ApiChatMessage()
-        chatMsg.setValue(msg)
+        const request = new SendMessageRequest()
+        request.setValue(msg)
 
-        state.apiClient?.sendMessage(chatMsg, (err, res) => {
+        state.apiClient?.sendMessage(request, (err, res) => {
             console.log(err, res)
         })
     })
