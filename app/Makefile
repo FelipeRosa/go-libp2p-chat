@@ -1,6 +1,26 @@
 PROTOC_GEN_TS_PATH="./node_modules/.bin/protoc-gen-ts"
 PROTOC_GEN_GRPC_PATH="./node_modules/.bin/grpc_tools_node_protoc_plugin"
 
+package-base: clean go-node
+	@npm run build
+	@cp chat-gonode build
+
+package-linux: package-base
+	@npx electron-packager . \
+		--ignore "(node_modules|.idea)" \
+		--platform linux \
+		--arch x64 \
+		--out dist
+	@bash scripts/zip-dist-linux.sh
+
+package-darwin: package-base
+	@npx electron-packager . \
+		--ignore "(node_modules|.idea)" \
+		--platform darwin \
+		--arch x64 \
+		--out dist
+	@npx electron-installer-dmg dist/libp2p-chat-darwin-x64 libp2p-chat --out dist --overwrite
+
 gen: clean
 	@mkdir -p gen
 	@protoc \
