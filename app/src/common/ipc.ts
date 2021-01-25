@@ -11,4 +11,5 @@ export type LocalNodeInfo = {
     address: string
     id: string
     nickname: string
+    currentRoomName: string
 }

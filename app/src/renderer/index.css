@@ -25,7 +25,7 @@ input[type="text"], input[type="textarea"], textarea {
     padding: 0 4px;
 }
 
-button, input[type="button"] {
+button, button[type="submit"], input[type="button"], input[type="submit"] {
     background-color: #bd93f9;
     font-weight: bold;
     color: #f8f8f2;

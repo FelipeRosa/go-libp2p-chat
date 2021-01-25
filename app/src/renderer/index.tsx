@@ -33,7 +33,10 @@ const App = () => {
         const addrInput = React.createRef<HTMLTextAreaElement>()
 
         return (
-            <div className={"connect-form"}>
+            <form
+                className={"connect-form"}
+                onSubmit={(e) => e.preventDefault()}
+            >
                 <div className={"connect-nickname-label"}>Nickname*</div>
                 <input
                     className={"connect-nickname-input"}
@@ -57,7 +60,7 @@ const App = () => {
                 />
                 <input
                     className={"connect-node-addrs-btn"}
-                    type={"button"}
+                    type={"submit"}
                     value={"Connect"}
                     onClick={() => {
                         if (
@@ -73,7 +76,7 @@ const App = () => {
                         }
                     }}
                 />
-            </div>
+            </form>
         )
     }
 
@@ -122,11 +125,15 @@ const App = () => {
         return (
             <div className={"chat"}>
                 <div className={"room-info"}>
-                    <div className={"room-name"}>Room Name</div>
                     {state.localNodeInfo && (
-                        <div className={"local-node-id"}>
-                            <b>Local Node Address</b>:{" "}
-                            {state.localNodeInfo.address}
+                        <div>
+                            <div className={"room-name"}>
+                                {state.localNodeInfo.currentRoomName}
+                            </div>
+                            <div className={"local-node-id"}>
+                                <b>Local Node Address</b>:{" "}
+                                {state.localNodeInfo.address}
+                            </div>
                         </div>
                     )}
                 </div>

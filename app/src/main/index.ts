@@ -1,12 +1,13 @@
 import * as grpc from "@grpc/grpc-js"
 import type { ChildProcessWithoutNullStreams } from "child_process"
 import * as child_process from "child_process"
-import { app, BrowserWindow, ipcMain, Menu } from "electron"
+import { app, BrowserWindow, dialog, ipcMain, Menu } from "electron"
 import getPort from "get-port"
 import * as path from "path"
 import { ApiClient } from "../../gen/api_grpc_pb"
 import {
     ChatMessage as ApiChatMessage,
+    GetCurrentRoomNameRequest,
     GetNicknameRequest,
     GetNodeIDRequest,
     SendMessageRequest,
@@ -105,79 +106,114 @@ app.whenReady().then(() => {
                 console.log("chat-gonode closed", state.goNode?.exitCode),
             )
 
-            const tryConnect = (callback: (connected: boolean) => void) => {
-                console.log("polling node...")
-                try {
-                    state.apiClient = new ApiClient(
-                        `localhost:${apiPort}`,
-                        grpc.credentials.createInsecure(),
-                    )
-                    state.apiClient.getNodeID(
-                        new GetNodeIDRequest(),
-                        (err, res) => {
-                            if (err === null) {
-                                state.nodeID = res?.getId() || null
-                                callback(true)
-                            } else {
-                                callback(false)
-                            }
-                        },
-                    )
-                } catch (e) {
-                    callback(false)
-                }
-            }
+            const tryConnect = async () => {
+                while (true) {
+                    console.log("polling node...")
 
-            const tryConnectCallback = (connected: boolean) => {
-                if (connected && state.apiClient !== null) {
-                    const newMessagesStream = state.apiClient.subscribeToNewMessages(
-                        new SubscribeToNewMessagesRequest(),
-                    )
+                    let nodeId = ""
+                    try {
+                        state.apiClient = new ApiClient(
+                            `localhost:${apiPort}`,
+                            grpc.credentials.createInsecure(),
+                        )
 
-                    newMessagesStream.on("data", (msg: ApiChatMessage) => {
-                        const senderId = msg.getSenderId()
+                        nodeId = await new Promise<string>(
+                            (resolve, reject) => {
+                                if (state.apiClient === null) {
+                                    return reject()
+                                }
 
-                        // need to get the sender nickname
-                        const getNicknameReq = new GetNicknameRequest()
-                        getNicknameReq.setPeerId(senderId)
-                        state.apiClient?.getNickname(
-                            getNicknameReq,
-                            (err, res) => {
-                                window.webContents.send(`chat.new-message`, {
-                                    sender: {
-                                        id: senderId,
-                                        nickname:
-                                            res?.getNickname() || "Unnamed",
+                                state.apiClient.getNodeID(
+                                    new GetNodeIDRequest(),
+                                    (err, res) => {
+                                        if (err !== null) {
+                                            return reject(err)
+                                        }
+                                        resolve(res?.getId() || "")
                                     },
-                                    timestamp: msg.getTimestamp(),
-                                    value: msg.getValue(),
-                                } as ChatMessage)
+                                )
                             },
                         )
-                    })
 
-                    newMessagesStream.on("end", () =>
-                        console.log("stream ended"),
-                    )
-
-                    const setNicknameRequest = new SetNicknameRequest()
-                    setNicknameRequest.setNickname(nickname)
-                    state.apiClient.setNickname(setNicknameRequest, () => {
-                        console.log(
-                            `connected to local node ID ${state.nodeID}`,
-                        )
-                        window.webContents.send("chat.connected", {
-                            address: `/ip4/127.0.0.1/tcp/${nodePort}/p2p/${state.nodeID}`,
-                            id: state.nodeID,
-                            nickname: nickname,
-                        } as LocalNodeInfo)
-                    })
-                } else {
-                    setTimeout(() => tryConnect(tryConnectCallback), 200)
+                        break
+                    } catch (e) {
+                        await new Promise((resolve) => setTimeout(resolve, 200))
+                    }
                 }
+
+                // we are connected
+                // subscribe to new messages
+                const newMessagesStream = state.apiClient.subscribeToNewMessages(
+                    new SubscribeToNewMessagesRequest(),
+                )
+                newMessagesStream.on("data", (msg: ApiChatMessage) => {
+                    const senderId = msg.getSenderId()
+
+                    // need to get the sender nickname
+                    const getNicknameReq = new GetNicknameRequest()
+                    getNicknameReq.setPeerId(senderId)
+                    state.apiClient?.getNickname(getNicknameReq, (err, res) => {
+                        window.webContents.send(`chat.new-message`, {
+                            sender: {
+                                id: senderId,
+                                nickname: res?.getNickname() || "Unnamed",
+                            },
+                            timestamp: msg.getTimestamp(),
+                            value: msg.getValue(),
+                        } as ChatMessage)
+                    })
+                })
+                newMessagesStream.on("end", () => console.log("stream ended"))
+
+                const setNicknameReq = new SetNicknameRequest()
+                setNicknameReq.setNickname(nickname)
+                const setNickname = new Promise<void>((resolve, reject) => {
+                    if (state.apiClient === null) {
+                        return reject()
+                    }
+
+                    state.apiClient.setNickname(setNicknameReq, (err, res) => {
+                        if (err !== null) {
+                            return reject(err)
+                        }
+                        resolve()
+                    })
+                })
+                await setNickname
+
+                const getCurrentRoomName = new Promise<string>(
+                    (resolve, reject) => {
+                        if (state.apiClient === null) {
+                            return reject()
+                        }
+
+                        state.apiClient.getCurrentRoomName(
+                            new GetCurrentRoomNameRequest(),
+                            (err, res) => {
+                                if (err !== null) {
+                                    return reject()
+                                }
+                                resolve(res?.getRoomName() || "No room name")
+                            },
+                        )
+                    },
+                )
+                return await getCurrentRoomName
             }
 
-            tryConnect(tryConnectCallback)
+            tryConnect()
+                .then((roomName: string) => {
+                    console.log(`connected to local node ID ${state.nodeID}`)
+                    window.webContents.send("chat.connected", {
+                        address: `/ip4/127.0.0.1/tcp/${nodePort}/p2p/${state.nodeID}`,
+                        id: state.nodeID,
+                        nickname: nickname,
+                        currentRoomName: roomName,
+                    } as LocalNodeInfo)
+                })
+                .catch((err) => {
+                    dialog.showErrorBox("Error", err.toString())
+                })
         })
     })
 
