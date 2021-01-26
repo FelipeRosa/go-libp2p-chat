@@ -12,24 +12,6 @@ Connect to this project's bootstrap node at (can take a bit to connect):
 /ip4/35.231.130.111/tcp/3000/p2p/QmULcHu2zsmaZ6McdLhyQKjhxLEbxYjrVV8Td347j77F2b
 ```
 
-## Running a standalone node
-
-### Bootstrap node
-
-A standalone bootstrap node can be started with:
-
-```shell
-go run main.go -port PORT -bootstrap-only
-```
-
-### Client nodes
-
-You can join the network by connecting to bootstrap nodes with:
-
-```shell
-go run main.go -port PORT -bootstrap.addrs BOOTSTRAP_NODE_ADDRS
-```
-
 ## License
 
 This project is licensed under the [MIT License]
