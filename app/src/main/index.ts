@@ -27,17 +27,24 @@ class State {
     goNode: ChildProcessWithoutNullStreams | null
     apiClient: ApiClient | null
     newMessagesStream: grpc.ClientReadableStream<ApiChatMessage> | null
+    connecting: boolean
 
     constructor() {
         this.goNode = null
         this.apiClient = null
         this.newMessagesStream = null
+        this.connecting = false
     }
 
     close() {
         this.newMessagesStream?.cancel()
+        this.newMessagesStream = null
+
         this.apiClient?.close()
+        this.apiClient = null
+
         this.goNode?.kill()
+        this.goNode = null
     }
 }
 
@@ -104,6 +111,8 @@ app.whenReady().then(() => {
         (_e, nickname: string, bootstrapAddrs: string) => {
             state.close()
 
+            state.connecting = true
+
             Promise.all([getPort(), getPort()]).then(([nodePort, apiPort]) => {
                 const goNodeArgs: string[] = [
                     "-port",
@@ -132,14 +141,19 @@ app.whenReady().then(() => {
                 state.goNode.stderr.on("data", (d: Buffer) =>
                     console.log("chat-gonode:", d.toString()),
                 )
-                state.goNode.on("close", () =>
-                    console.log("chat-gonode closed", state.goNode?.exitCode),
-                )
+                state.goNode.on("close", () => {
+                    if (state.connecting) {
+                        state.connecting = false
+                        throw new Error("failed to start local node")
+                    }
+
+                    console.log("chat-gonode closed")
+                })
 
                 const tryConnect = async () => {
                     let nodeId = ""
 
-                    while (true) {
+                    while (state.connecting) {
                         console.log("polling node...")
                         try {
                             state.apiClient = new ApiClient(
@@ -165,15 +179,25 @@ app.whenReady().then(() => {
                                 },
                             )
 
-                            break
+                            // connected
+                            state.connecting = false
                         } catch (e) {
+                            state.apiClient?.close()
+                            state.apiClient = null
+
                             await new Promise((resolve) =>
                                 setTimeout(resolve, 200),
                             )
                         }
                     }
 
-                    // we are connected
+                    if (state.apiClient === null) {
+                        console.error(
+                            "local node connection failed. stopping connection try",
+                        )
+                        return null
+                    }
+
                     // subscribe to new messages
                     state.newMessagesStream = state.apiClient.subscribeToNewMessages(
                         new SubscribeToNewMessagesRequest(),
@@ -227,15 +251,12 @@ app.whenReady().then(() => {
                             return reject()
                         }
 
-                        state.apiClient.setNickname(
-                            setNicknameReq,
-                            (err, res) => {
-                                if (err !== null) {
-                                    return reject(err)
-                                }
-                                resolve()
-                            },
-                        )
+                        state.apiClient.setNickname(setNicknameReq, (err) => {
+                            if (err !== null) {
+                                return reject(err)
+                            }
+                            resolve()
+                        })
                     })
                     await setNickname
 
@@ -264,7 +285,13 @@ app.whenReady().then(() => {
                 }
 
                 tryConnect()
-                    .then(([nodeId, roomName]) => {
+                    .then((connectionData: string[] | null) => {
+                        if (connectionData === null) {
+                            return
+                        }
+
+                        const [nodeId, roomName] = connectionData
+
                         console.log(`connected to local node ID ${nodeId}`)
                         window.webContents.send("chat.connected", {
                             address: `/ip4/127.0.0.1/tcp/${nodePort}/p2p/${nodeId}`,
