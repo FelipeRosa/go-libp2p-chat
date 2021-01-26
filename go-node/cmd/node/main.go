@@ -62,7 +62,7 @@ func main() {
 
 	if cfg.APIPort != 0 {
 		logger.Info("starting gRPC API server")
-		apiListener, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", cfg.APIPort))
+		apiListener, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", cfg.APIPort))
 		if err != nil {
 			logger.Error("failed starting gRPC API server", zap.Error(err))
 			return
