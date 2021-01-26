@@ -136,7 +136,8 @@ const App = () => {
                     {state.localNodeInfo && (
                         <div>
                             <div className={"room-name"}>
-                                {state.localNodeInfo.currentRoomName}
+                                Room:{" "}
+                                <b>{state.localNodeInfo.currentRoomName}</b>
                             </div>
                             <div className={"local-node-id"}>
                                 <b>Local Node Address</b>:{" "}
