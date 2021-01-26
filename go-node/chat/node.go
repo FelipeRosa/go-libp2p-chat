@@ -4,10 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"sync"
 	"time"
 
 	"github.com/libp2p/go-libp2p"
+	"github.com/libp2p/go-libp2p-core/crypto"
 	libp2phost "github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
 	discovery "github.com/libp2p/go-libp2p-discovery"
@@ -109,8 +112,17 @@ func (n *node) Start(ctx context.Context, port uint16) error {
 
 	nodeAddrStrings := []string{fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", port)}
 
+	privKey, err := n.getPrivateKey()
+	if err != nil {
+		return err
+	}
+
 	n.logger.Debug("creating libp2p host")
-	host, err := libp2p.New(ctx, libp2p.ListenAddrStrings(nodeAddrStrings...))
+	host, err := libp2p.New(
+		ctx,
+		libp2p.ListenAddrStrings(nodeAddrStrings...),
+		libp2p.Identity(privKey),
+	)
 	if err != nil {
 		return errors.Wrap(err, "creating libp2p host")
 	}
@@ -454,4 +466,50 @@ func (n *node) storeNickname(ctx context.Context, nickname string) error {
 	}
 
 	return nil
+}
+
+func (n *node) getPrivateKey() (crypto.PrivKey, error) {
+	var generate bool
+
+	privKeyBytes, err := ioutil.ReadFile("privkey_rsa")
+	if os.IsNotExist(err) {
+		n.logger.Info("no identity private key file found.")
+		generate = true
+	} else if err != nil {
+		return nil, err
+	}
+
+	if generate {
+		n.logger.Info("generating identity private key")
+		privKey, _, err := crypto.GenerateKeyPair(crypto.RSA, 4096)
+		if err != nil {
+			return nil, errors.Wrap(err, "generating identity private key")
+		}
+		n.logger.Info("generated new identity private key")
+
+		privKeyBytes, err := crypto.MarshalPrivateKey(privKey)
+		if err != nil {
+			return nil, errors.Wrap(err, "marshalling identity private key")
+		}
+
+		f, err := os.Create("privkey_rsa")
+		if err != nil {
+			return nil, errors.Wrap(err, "creating identity private key file")
+		}
+		defer f.Close()
+
+		if _, err := f.Write(privKeyBytes); err != nil {
+			return nil, errors.Wrap(err, "writing identity private key to file")
+		}
+
+		return privKey, nil
+	}
+
+	privKey, err := crypto.UnmarshalPrivateKey(privKeyBytes)
+	if err != nil {
+		return nil, errors.Wrap(err, "unmarshalling identity private key")
+	}
+
+	n.logger.Info("loaded identity private key from file")
+	return privKey, nil
 }
