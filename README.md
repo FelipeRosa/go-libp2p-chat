@@ -2,7 +2,11 @@
 
 Peer-to-peer chat app built using libp2p as a learning project.
 
-![Application usage gif](docs/readme-gif.gif)
+<img
+    alt="Application usage gif"
+    src="docs/readme-gif.gif"
+    width="640px"
+/>
 
 ## Connecting to the test network
 
