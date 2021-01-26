@@ -5,8 +5,10 @@ updates:
     directory: "/app"
     schedule:
       interval: "daily"
+    open-pull-requests-limit: 5
 
   - package-ecosystem: "gomod"
     directory: "/go-node"
     schedule:
       interval: "daily"
+    open-pull-requests-limit: 5
