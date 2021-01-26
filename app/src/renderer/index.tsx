@@ -89,6 +89,14 @@ const App = () => {
         } = useContext(AppStateContext)
 
         const inputBox = React.createRef<HTMLInputElement>()
+        const msgsDiv = React.createRef<HTMLDivElement>()
+
+        // always show the latest messages
+        useEffect(() => {
+            if (msgsDiv.current !== null) {
+                msgsDiv.current.scrollTop = msgsDiv.current.scrollHeight
+            }
+        }, [messages])
 
         const formatTimestamp = (ts: number): string => {
             const d = new Date(ts * 1000)
@@ -138,7 +146,7 @@ const App = () => {
                     )}
                 </div>
 
-                <div className={"chat-messages"}>
+                <div className={"chat-messages"} ref={msgsDiv}>
                     {messages.map((msg, index) => (
                         <div key={index} className={"chat-message"}>
                             <div className={"chat-message-timestamp"}>
