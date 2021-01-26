@@ -4,14 +4,15 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/FelipeRosa/go-libp2p-chat/go-node/api"
-	"github.com/FelipeRosa/go-libp2p-chat/go-node/chat"
-	apigen "github.com/FelipeRosa/go-libp2p-chat/go-node/gen/api"
 	"net"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
+
+	"github.com/FelipeRosa/go-libp2p-chat/go-node/api"
+	"github.com/FelipeRosa/go-libp2p-chat/go-node/chat"
+	apigen "github.com/FelipeRosa/go-libp2p-chat/go-node/gen/api"
 
 	"github.com/multiformats/go-multiaddr"
 	"github.com/pkg/errors"
