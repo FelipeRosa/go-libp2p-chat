@@ -1,6 +1,6 @@
 # libp2p Chat
 
-Peer-to-peer chat node built using libp2p as a learning project.
+Peer-to-peer chat app built using libp2p as a learning project.
 
 ![Application usage gif](docs/readme-gif.gif)
 
