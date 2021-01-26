@@ -71,6 +71,8 @@ type node struct {
 
 	bootstrapOnly bool
 
+	storeIdentity bool
+
 	ps           *pubsub.PubSub
 	topic        *pubsub.Topic
 	subscription *pubsub.Subscription
@@ -87,7 +89,7 @@ type node struct {
 	findPeersErrChan  <-chan error
 }
 
-func NewNode(logger *zap.Logger, boostrapOnly bool) Node {
+func NewNode(logger *zap.Logger, boostrapOnly bool, storeIdentity bool) Node {
 	if logger == nil {
 		logger = zap.NewNop()
 	}
@@ -96,6 +98,7 @@ func NewNode(logger *zap.Logger, boostrapOnly bool) Node {
 		logger:        logger,
 		host:          nil,
 		bootstrapOnly: boostrapOnly,
+		storeIdentity: storeIdentity,
 		messageStore:  NewMessageStore(3),
 	}
 }
@@ -469,6 +472,10 @@ func (n *node) storeNickname(ctx context.Context, nickname string) error {
 }
 
 func (n *node) getPrivateKey() (crypto.PrivKey, error) {
+	if !n.storeIdentity {
+		return n.generateNewPrivKey()
+	}
+
 	var generate bool
 
 	privKeyBytes, err := ioutil.ReadFile("privkey_rsa")
@@ -480,12 +487,10 @@ func (n *node) getPrivateKey() (crypto.PrivKey, error) {
 	}
 
 	if generate {
-		n.logger.Info("generating identity private key")
-		privKey, _, err := crypto.GenerateKeyPair(crypto.RSA, 4096)
+		privKey, err := n.generateNewPrivKey()
 		if err != nil {
-			return nil, errors.Wrap(err, "generating identity private key")
+			return nil, err
 		}
-		n.logger.Info("generated new identity private key")
 
 		privKeyBytes, err := crypto.MarshalPrivateKey(privKey)
 		if err != nil {
@@ -511,5 +516,16 @@ func (n *node) getPrivateKey() (crypto.PrivKey, error) {
 	}
 
 	n.logger.Info("loaded identity private key from file")
+	return privKey, nil
+}
+
+func (n *node) generateNewPrivKey() (crypto.PrivKey, error) {
+	n.logger.Info("generating identity private key")
+	privKey, _, err := crypto.GenerateKeyPair(crypto.RSA, 4096)
+	if err != nil {
+		return nil, errors.Wrap(err, "generating identity private key")
+	}
+	n.logger.Info("generated new identity private key")
+
 	return privKey, nil
 }

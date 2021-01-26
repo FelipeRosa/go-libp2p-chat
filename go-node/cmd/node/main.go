@@ -26,6 +26,7 @@ type cfg struct {
 	APILocal       bool
 	BootstrapOnly  bool
 	BootstrapNodes []multiaddr.Multiaddr
+	StoreIdentity  bool
 }
 
 func main() {
@@ -41,7 +42,7 @@ func main() {
 		panic(err)
 	}
 
-	node := chat.NewNode(logger, cfg.BootstrapOnly)
+	node := chat.NewNode(logger, cfg.BootstrapOnly, cfg.StoreIdentity)
 	if err := node.Start(ctx, cfg.NodePort); err != nil {
 		panic(err)
 	}
@@ -109,6 +110,7 @@ func parseArgs() (cfg, error) {
 	apiPort := flag.Uint("api.port", 0, "api port")
 	apiLocal := flag.Bool("api.local", true, "whether the node API should be accessible only from localhost")
 	bootstrapNodes := flag.String("bootstrap.addrs", "", "comma separated list of bootstrap node addresses")
+	storeIdentity := flag.Bool("id.store", false, "whether the identity private key should be stored to a file")
 	flag.Parse()
 
 	if *nodePort == 0 {
@@ -134,5 +136,6 @@ func parseArgs() (cfg, error) {
 		APIPort:        uint16(*apiPort),
 		BootstrapOnly:  *bootstrapOnly,
 		BootstrapNodes: bootstrapNodeAddrs,
+		StoreIdentity:  *storeIdentity,
 	}, nil
 }
