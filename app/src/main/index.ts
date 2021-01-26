@@ -117,11 +117,12 @@ app.whenReady().then(() => {
                 const goNodeArgs: string[] = [
                     "-port",
                     nodePort.toString(),
-                    "-api-port",
+                    "-api.port",
                     apiPort.toString(),
+                    "-api.local"
                 ]
                 if (bootstrapAddrs.length > 0) {
-                    goNodeArgs.push("-bootstrap-addrs")
+                    goNodeArgs.push("-bootstrap.addrs")
                     goNodeArgs.push(bootstrapAddrs.trim())
                 }
 

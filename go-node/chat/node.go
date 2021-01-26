@@ -52,10 +52,10 @@ type Node interface {
 	Start(ctx context.Context, port uint16) error
 	Bootstrap(ctx context.Context, nodeAddrs []multiaddr.Multiaddr) error
 	SendMessage(ctx context.Context, msg string) error
-	GetMessages() []Message
-	SubscribeToNewMessages() *NewMessageSubscription
+	GetMessages() ([]Message, error)
+	SubscribeToNewMessages() (*NewMessageSubscription, error)
 	JoinRoom(ctx context.Context, roomName string) error
-	CurrentRoomName() string
+	CurrentRoomName() (string, error)
 	SetNickname(ctx context.Context, nickname string) error
 	GetNickname(ctx context.Context, peerID string) (string, error)
 	Shutdown() error
@@ -65,6 +65,8 @@ type node struct {
 	logger *zap.Logger
 	host   libp2phost.Host
 	kadDHT *dht.IpfsDHT
+
+	bootstrapOnly bool
 
 	ps           *pubsub.PubSub
 	topic        *pubsub.Topic
@@ -82,15 +84,16 @@ type node struct {
 	findPeersErrChan  <-chan error
 }
 
-func NewNode(logger *zap.Logger) Node {
+func NewNode(logger *zap.Logger, boostrapOnly bool) Node {
 	if logger == nil {
 		logger = zap.NewNop()
 	}
 
 	return &node{
-		logger:       logger,
-		host:         nil,
-		messageStore: NewMessageStore(3),
+		logger:        logger,
+		host:          nil,
+		bootstrapOnly: boostrapOnly,
+		messageStore:  NewMessageStore(3),
 	}
 }
 
@@ -102,6 +105,8 @@ func (n *node) ID() string {
 }
 
 func (n *node) Start(ctx context.Context, port uint16) error {
+	n.logger.Info("starting chat node", zap.Bool("bootstrapOnly", n.bootstrapOnly))
+
 	nodeAddrStrings := []string{fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", port)}
 
 	n.logger.Debug("creating libp2p host")
@@ -225,6 +230,14 @@ func (n *node) Bootstrap(ctx context.Context, nodeAddrs []multiaddr.Multiaddr) e
 }
 
 func (n *node) SendMessage(ctx context.Context, msg string) error {
+	if n.bootstrapOnly {
+		return errors.New("can't send message from a bootstrap-only node")
+	}
+
+	if n.topic == nil {
+		return errors.New("not connected to a room")
+	}
+
 	m := Message{
 		SenderID:  n.host.ID(),
 		Timestamp: time.Now(),
@@ -243,11 +256,19 @@ func (n *node) SendMessage(ctx context.Context, msg string) error {
 	return nil
 }
 
-func (n *node) GetMessages() []Message {
-	return n.messageStore.Messages()
+func (n *node) GetMessages() ([]Message, error) {
+	if n.bootstrapOnly {
+		return nil, errors.New("can't get messages from a bootstrap-only node")
+	}
+
+	return n.messageStore.Messages(), nil
 }
 
-func (n *node) SubscribeToNewMessages() *NewMessageSubscription {
+func (n *node) SubscribeToNewMessages() (*NewMessageSubscription, error) {
+	if n.bootstrapOnly {
+		return nil, errors.New("can't subscribe to new messages on a bootstrap-only node")
+	}
+
 	sub := &NewMessageSubscription{
 		messageCh: make(chan Message),
 		doneCh:    make(chan struct{}, 1),
@@ -257,10 +278,14 @@ func (n *node) SubscribeToNewMessages() *NewMessageSubscription {
 	n.newMessageSubscriptionsLock.Lock()
 	n.newMessageSubscriptions = append(n.newMessageSubscriptions, sub)
 
-	return sub
+	return sub, nil
 }
 
 func (n *node) JoinRoom(ctx context.Context, roomName string) error {
+	if n.bootstrapOnly {
+		return errors.New("can't join room on a bootstrap-only node")
+	}
+
 	if n.subscription != nil {
 		return errors.New("changing rooms is not implemented yet")
 	}
@@ -291,11 +316,19 @@ func (n *node) JoinRoom(ctx context.Context, roomName string) error {
 	return nil
 }
 
-func (n *node) CurrentRoomName() string {
-	return n.currentRoomName
+func (n *node) CurrentRoomName() (string, error) {
+	if n.bootstrapOnly {
+		return "", errors.New("can't get current room name from a bootstrap-only node")
+	}
+
+	return n.currentRoomName, nil
 }
 
 func (n *node) SetNickname(ctx context.Context, nickname string) error {
+	if n.bootstrapOnly {
+		return errors.New("can't set nickname on a bootstrap-only node")
+	}
+
 	// TODO: should publish the nickname change to the rooms we are connected to
 	// (https://github.com/FelipeRosa/go-libp2p-chat/issues/14)
 	if len(n.kadDHT.RoutingTable().ListPeers()) == 0 {

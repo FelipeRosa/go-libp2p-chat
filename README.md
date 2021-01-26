@@ -11,15 +11,15 @@ Peer-to-peer chat app built using libp2p as a learning project.
 A standalone bootstrap node can be started with:
 
 ```shell
-go run main.go -port PORT -api-port APIPORT
+go run main.go -port PORT -bootstrap-only
 ```
 
 ### Client nodes
 
 You can join the network by connecting to bootstrap nodes with:
- 
+
 ```shell
-go run main.go -port PORT -api-port APIPORT -bootstrap-addrs BOOTSTRAP_NODE_ADDRS
+go run main.go -port PORT -bootstrap.addrs BOOTSTRAP_NODE_ADDRS
 ```
 
 ## License

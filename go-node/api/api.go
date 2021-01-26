@@ -42,7 +42,10 @@ func (s *Server) SendMessage(ctx context.Context, msg *apigen.SendMessageRequest
 func (s *Server) SubscribeToNewMessages(_ *apigen.SubscribeToNewMessagesRequest, stream apigen.Api_SubscribeToNewMessagesServer) error {
 	s.logger.Info("handling SubscribeToNewMessages")
 
-	sub := s.node.SubscribeToNewMessages()
+	sub, err := s.node.SubscribeToNewMessages()
+	if err != nil {
+		return err
+	}
 	defer sub.Close()
 
 	for {
@@ -97,5 +100,10 @@ func (s *Server) GetCurrentRoomName(
 	context.Context,
 	*apigen.GetCurrentRoomNameRequest,
 ) (*apigen.GetCurrentRoomNameResponse, error) {
-	return &apigen.GetCurrentRoomNameResponse{RoomName: s.node.CurrentRoomName()}, nil
+	roomName, err := s.node.CurrentRoomName()
+	if err != nil {
+		return nil, err
+	}
+
+	return &apigen.GetCurrentRoomNameResponse{RoomName: roomName}, nil
 }

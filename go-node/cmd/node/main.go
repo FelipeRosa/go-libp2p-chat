@@ -23,6 +23,8 @@ import (
 type cfg struct {
 	NodePort       uint16
 	APIPort        uint16
+	APILocal       bool
+	BootstrapOnly  bool
 	BootstrapNodes []multiaddr.Multiaddr
 }
 
@@ -39,7 +41,7 @@ func main() {
 		panic(err)
 	}
 
-	node := chat.NewNode(logger)
+	node := chat.NewNode(logger, cfg.BootstrapOnly)
 	if err := node.Start(ctx, cfg.NodePort); err != nil {
 		panic(err)
 	}
@@ -55,14 +57,30 @@ func main() {
 		logger.Error("failed bootstrapping", zap.Error(err))
 		return
 	}
-	if err := node.JoinRoom(ctx, "global"); err != nil {
-		logger.Error("failed joining global room")
-		return
+
+	// skip joining the global room if this node is a bootstrap-only node since its purpose is just to join
+	// other nodes into the network
+	if !cfg.BootstrapOnly {
+		if err := node.JoinRoom(ctx, "global"); err != nil {
+			logger.Error("failed joining global room")
+			return
+		}
 	}
 
 	if cfg.APIPort != 0 {
-		logger.Info("starting gRPC API server")
-		apiListener, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", cfg.APIPort))
+		var apiListenerAddr string
+		if cfg.APILocal {
+			apiListenerAddr = fmt.Sprintf("127.0.0.1")
+		} else {
+			apiListenerAddr = fmt.Sprintf("0.0.0.0")
+		}
+		apiListenerAddr = fmt.Sprintf("%s:%d", apiListenerAddr, cfg.APIPort)
+
+		logger.Info("starting gRPC API server",
+			zap.String("address", apiListenerAddr),
+			zap.Bool("local", cfg.APILocal),
+		)
+		apiListener, err := net.Listen("tcp", apiListenerAddr)
 		if err != nil {
 			logger.Error("failed starting gRPC API server", zap.Error(err))
 			return
@@ -87,8 +105,10 @@ func main() {
 
 func parseArgs() (cfg, error) {
 	nodePort := flag.Uint("port", 0, "node port")
-	apiPort := flag.Uint("api-port", 0, "api port")
-	bootstrapNodes := flag.String("bootstrap-addrs", "", "comma separated list of bootstrap node addresses")
+	bootstrapOnly := flag.Bool("bootstrap-only", false, "whether the node should only serve as a bootstrap node (e.g. it will not respond to send message requests)")
+	apiPort := flag.Uint("api.port", 0, "api port")
+	apiLocal := flag.Bool("api.local", true, "whether the node API should be accessible only from localhost")
+	bootstrapNodes := flag.String("bootstrap.addrs", "", "comma separated list of bootstrap node addresses")
 	flag.Parse()
 
 	if *nodePort == 0 {
@@ -110,7 +130,9 @@ func parseArgs() (cfg, error) {
 
 	return cfg{
 		NodePort:       uint16(*nodePort),
+		APILocal:       *apiLocal,
 		APIPort:        uint16(*apiPort),
+		BootstrapOnly:  *bootstrapOnly,
 		BootstrapNodes: bootstrapNodeAddrs,
 	}, nil
 }
