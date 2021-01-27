@@ -13,7 +13,7 @@ Peer-to-peer chat app built using libp2p as a learning project.
 Connect to this project's bootstrap node at (can take a bit to connect):
 
 ```
-/ip4/35.231.130.111/tcp/3000/p2p/QmULcHu2zsmaZ6McdLhyQKjhxLEbxYjrVV8Td347j77F2b
+/ip4/35.231.130.111/tcp/3000/p2p/12D3KooWFowUwjqqpPNrX7XYx6XH9vTu31eZFC59QLBQynpqE1u4
 ```
 
 ## License
