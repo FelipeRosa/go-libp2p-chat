@@ -22,34 +22,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type NewMessageSubscription struct {
-	messageCh chan Message
-	doneCh    chan struct{}
-	closed    bool
-}
-
-func (sub *NewMessageSubscription) Channel() <-chan Message {
-	return sub.messageCh
-}
-
-func (sub *NewMessageSubscription) Close() {
-	sub.doneCh <- struct{}{}
-	sub.closed = true
-}
-
-func (sub *NewMessageSubscription) Closed() bool {
-	return sub.closed
-}
-
-type validator struct{}
-
-func (v *validator) Validate(string, []byte) error {
-	return nil
-}
-
-func (v *validator) Select(string, [][]byte) (int, error) {
-	return 0, nil
-}
+const privKeyFileName = "libp2p-chat.privkey"
 
 type Node interface {
 	ID() string
@@ -64,8 +37,6 @@ type Node interface {
 	GetNickname(ctx context.Context, peerID string) (string, error)
 	Shutdown() error
 }
-
-const privKeyFileName = "libp2p-chat.privkey"
 
 type node struct {
 	logger *zap.Logger
