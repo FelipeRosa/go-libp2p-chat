@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -63,6 +64,8 @@ type Node interface {
 	GetNickname(ctx context.Context, peerID string) (string, error)
 	Shutdown() error
 }
+
+const privKeyFileName = "libp2p-chat.privkey"
 
 type node struct {
 	logger *zap.Logger
@@ -478,7 +481,7 @@ func (n *node) getPrivateKey() (crypto.PrivKey, error) {
 
 	var generate bool
 
-	privKeyBytes, err := ioutil.ReadFile("privkey_rsa")
+	privKeyBytes, err := ioutil.ReadFile(privKeyFileName)
 	if os.IsNotExist(err) {
 		n.logger.Info("no identity private key file found.")
 		generate = true
@@ -497,7 +500,7 @@ func (n *node) getPrivateKey() (crypto.PrivKey, error) {
 			return nil, errors.Wrap(err, "marshalling identity private key")
 		}
 
-		f, err := os.Create("privkey_rsa")
+		f, err := os.Create(privKeyFileName)
 		if err != nil {
 			return nil, errors.Wrap(err, "creating identity private key file")
 		}
@@ -521,7 +524,7 @@ func (n *node) getPrivateKey() (crypto.PrivKey, error) {
 
 func (n *node) generateNewPrivKey() (crypto.PrivKey, error) {
 	n.logger.Info("generating identity private key")
-	privKey, _, err := crypto.GenerateKeyPair(crypto.RSA, 4096)
+	privKey, _, err := crypto.GenerateEd25519Key(rand.Reader)
 	if err != nil {
 		return nil, errors.Wrap(err, "generating identity private key")
 	}
