@@ -1,15 +1,17 @@
 import { ChatMessage, LocalNodeInfo } from "../common/ipc"
-import { AppState } from "./entities"
+import { AppState, ConnState } from "./entities"
 
 export type Msg =
     | {
-          type: "new-message"
-          message: ChatMessage
-      }
+    type: "new-message"
+    message: ChatMessage
+}
+    | { type: "connecting" }
     | {
-          type: "connected"
-          localNodeInfo: LocalNodeInfo
-      }
+    type: "connected"
+    localNodeInfo: LocalNodeInfo
+}
+    | { type: "disconnected" }
 
 export function reducer(prevState: AppState, msg: Msg): AppState {
     switch (msg.type) {
@@ -22,11 +24,23 @@ export function reducer(prevState: AppState, msg: Msg): AppState {
                 chat: { messages },
             }
 
+        case "connecting":
+            return {
+                ...prevState,
+                connectionState: ConnState.Connecting,
+            }
+
         case "connected":
             return {
                 ...prevState,
-                connected: true,
+                connectionState: ConnState.Connected,
                 localNodeInfo: msg.localNodeInfo,
+            }
+
+        case "disconnected":
+            return {
+                ...prevState,
+                connectionState: ConnState.Disconnected,
             }
 
         default:

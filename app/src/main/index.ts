@@ -112,6 +112,7 @@ app.whenReady().then(() => {
             state.close()
 
             state.connecting = true
+            window.webContents.send("chat.connecting")
 
             Promise.all([getPort(), getPort()]).then(([nodePort, apiPort]) => {
                 const goNodeArgs: string[] = [
@@ -119,7 +120,7 @@ app.whenReady().then(() => {
                     nodePort.toString(),
                     "-api.port",
                     apiPort.toString(),
-                    "-api.local"
+                    "-api.local",
                 ]
                 if (bootstrapAddrs.length > 0) {
                     goNodeArgs.push("-bootstrap.addrs")
@@ -143,6 +144,12 @@ app.whenReady().then(() => {
                     console.log("chat-gonode:", d.toString()),
                 )
                 state.goNode.on("close", () => {
+                    // send message to renderer only if there was any apiClient
+                    // connected
+                    if (state.apiClient !== null) {
+                        window.webContents.send("chat.disconnected")
+                    }
+
                     if (state.connecting) {
                         state.connecting = false
                         throw new Error("failed to start local node")

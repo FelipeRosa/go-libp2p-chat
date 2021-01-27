@@ -1,14 +1,15 @@
 import { ipcRenderer } from "electron"
-import React, { useContext, useEffect, useReducer } from "react"
+import React, { useContext, useEffect, useReducer, useState } from "react"
 import { render } from "react-dom"
 import { ChatMessage, LocalNodeInfo } from "../common/ipc"
 import { AppStateContext } from "./context"
+import { ConnState } from "./entities"
 import "./index.css"
 import { reducer } from "./reducer"
 
 const App = () => {
     const [state, dispatch] = useReducer(reducer, {
-        connected: false,
+        connectionState: ConnState.Disconnected,
         localNodeInfo: null,
         chat: { messages: [] },
     })
@@ -18,13 +19,23 @@ const App = () => {
             dispatch({ type: "new-message", message: msg })
         })
 
+        ipcRenderer.on("chat.connecting", () => {
+            dispatch({ type: "connecting" })
+        })
+
         ipcRenderer.on("chat.connected", (_e, localNodeInfo: LocalNodeInfo) => {
             dispatch({ type: "connected", localNodeInfo })
         })
 
+        ipcRenderer.on("chat.disconnected", () => {
+            dispatch({ type: "disconnected" })
+        })
+
         return () => {
             ipcRenderer.removeAllListeners("chat.new-message")
+            ipcRenderer.removeAllListeners("chat.connecting")
             ipcRenderer.removeAllListeners("chat.connected")
+            ipcRenderer.removeAllListeners("chat.disconnected")
         }
     }, [state])
 
@@ -77,6 +88,30 @@ const App = () => {
                     }}
                 />
             </form>
+        )
+    }
+
+    const Connecting = () => {
+        const [thumbLeft, setThumbLeft] = useState(0)
+
+        useEffect(() => {
+            const intervalId = setInterval(() => {
+                setThumbLeft(thumbLeft > 100 ? -200 : thumbLeft + 3)
+            }, 10)
+
+            return () => clearInterval(intervalId)
+        }, [thumbLeft])
+
+        return (
+            <div className={"connecting-screen"}>
+                <div className={"connecting-label"}>Connecting...</div>
+                <div className={"connecting-feedback-bar"}>
+                    <div
+                        className={"connecting-feedback-bar-thumb"}
+                        style={{ left: thumbLeft }}
+                    />
+                </div>
+            </div>
         )
     }
 
@@ -189,7 +224,13 @@ const App = () => {
 
     return (
         <AppStateContext.Provider value={{ state, dispatch }}>
-            {state.connected ? <Messages /> : <Connect />}
+            {state.connectionState === ConnState.Connected ? (
+                <Messages />
+            ) : state.connectionState === ConnState.Connecting ? (
+                <Connecting />
+            ) : (
+                <Connect />
+            )}
         </AppStateContext.Provider>
     )
 }

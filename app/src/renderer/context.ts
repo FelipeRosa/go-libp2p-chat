@@ -1,5 +1,5 @@
 import { createContext, Dispatch } from "react"
-import { AppState } from "./entities"
+import { AppState, ConnState } from "./entities"
 import { Msg } from "./reducer"
 
 export type AppStateContextValue = {
@@ -9,7 +9,7 @@ export type AppStateContextValue = {
 
 export const AppStateContext = createContext<AppStateContextValue>({
     state: {
-        connected: false,
+        connectionState: ConnState.Disconnected,
         localNodeInfo: null,
         chat: { messages: [] },
     },
