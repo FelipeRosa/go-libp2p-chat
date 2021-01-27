@@ -8,6 +8,17 @@ Peer-to-peer chat app built using libp2p as a learning project.
     width="640px"
 />
 
+## Installing the application
+
+Available platforms:
+
+| Platform | Installers |
+|----------|------------|
+| Linux    | [.rpm](https://github.com/FelipeRosa/go-libp2p-chat/releases/download/v0.1.0/libp2p-chat-0.1.0-1.x86_64.rpm), [.deb](https://github.com/FelipeRosa/go-libp2p-chat/releases/download/v0.1.0/libp2p-chat_0.1.0_amd64.deb)|
+| macOS    | [.dmg](https://github.com/FelipeRosa/go-libp2p-chat/releases/download/v0.1.0/libp2p-chat_macos-x64.dmg)|
+
+For more options check out the [latest release page](https://github.com/FelipeRosa/go-libp2p-chat/releases/latest). 
+
 ## Connecting to the test network
 
 Connect to this project's bootstrap node at (can take a bit to connect):
