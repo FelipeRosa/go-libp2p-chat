@@ -42,19 +42,19 @@ func main() {
 		panic(err)
 	}
 
-	node := node.NewNode(logger, cfg.BootstrapOnly, cfg.StoreIdentity)
-	if err := node.Start(ctx, cfg.NodePort); err != nil {
+	n := node.NewNode(logger, cfg.BootstrapOnly, cfg.StoreIdentity)
+	if err := n.Start(ctx, cfg.NodePort); err != nil {
 		panic(err)
 	}
 	defer func() {
 		logger.Info("shutting down...")
 		// handle shutdown error
-		if err := node.Shutdown(); err != nil {
+		if err := n.Shutdown(); err != nil {
 			panic(err)
 		}
 	}()
 
-	if err := node.Bootstrap(ctx, cfg.BootstrapNodes); err != nil {
+	if err := n.Bootstrap(ctx, cfg.BootstrapNodes); err != nil {
 		logger.Error("failed bootstrapping", zap.Error(err))
 		return
 	}
@@ -62,7 +62,7 @@ func main() {
 	// skip joining the global room if this node is a bootstrap-only node since its purpose is just to join
 	// other nodes into the network
 	if !cfg.BootstrapOnly {
-		if err := node.JoinRoom(ctx, "global"); err != nil {
+		if err := n.JoinRoom("global"); err != nil {
 			logger.Error("failed joining global room")
 			return
 		}
@@ -88,7 +88,7 @@ func main() {
 		}
 
 		grpcServer := grpc.NewServer()
-		apigen.RegisterApiServer(grpcServer, api.NewServer(logger, node))
+		apigen.RegisterApiServer(grpcServer, api.NewServer(logger, n))
 
 		go func() {
 			if err := grpcServer.Serve(apiListener); err != nil {
