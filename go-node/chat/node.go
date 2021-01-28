@@ -12,6 +12,7 @@ import (
 
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-core/crypto"
+	discovery2 "github.com/libp2p/go-libp2p-core/discovery"
 	libp2phost "github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
 	discovery "github.com/libp2p/go-libp2p-discovery"
@@ -58,9 +59,6 @@ type node struct {
 
 	nicknameStoreMutex   sync.Mutex
 	nicknameStoreWaiting bool
-
-	findPeersDoneChan chan<- struct{}
-	findPeersErrChan  <-chan error
 }
 
 func NewNode(logger *zap.Logger, boostrapOnly bool, storeIdentity bool) Node {
@@ -170,48 +168,32 @@ func (n *node) Bootstrap(ctx context.Context, nodeAddrs []multiaddr.Multiaddr) e
 	rd := discovery.NewRoutingDiscovery(kadDHT)
 
 	n.logger.Info("starting advertising thread")
-	if _, err := rd.Advertise(ctx, DiscoveryNamespace); err != nil {
-		return errors.Wrap(err, "starting advertising thread")
-	}
+	discovery.Advertise(ctx, rd, DiscoveryNamespace)
 
-	peersChan, err := rd.FindPeers(ctx, DiscoveryNamespace)
-	if err != nil {
-		return errors.Wrap(err, "starting find peers thread")
-	}
-
-	findPeersDoneChan := make(chan struct{})
-	findPeersErrChan := make(chan error)
-	n.findPeersDoneChan = findPeersDoneChan
-	n.findPeersErrChan = findPeersErrChan
-
-	go func(peersChan <-chan peer.AddrInfo, errChan chan<- error, doneChan <-chan struct{}) {
-		var done bool
-		for !done {
-			select {
-			case <-doneChan:
-				done = true
-
-			case pi := <-peersChan:
-				if pi.ID == "" || pi.ID == n.host.ID() {
-					continue
-				}
-
-				var addrStrings []string
-				for _, addr := range pi.Addrs {
-					addrStrings = append(addrStrings, addr.String())
-				}
-
-				n.logger.Info("found peer",
-					zap.String("ID", pi.ID.Pretty()),
-					zap.Strings("addresses", addrStrings),
-				)
-			}
-		}
-	}(peersChan, findPeersErrChan, findPeersDoneChan)
-
+	// try finding more peers every 2 minutes
 	go func() {
-		for err := range n.findPeersErrChan {
-			n.logger.Error("peer thread error", zap.Error(err))
+		for {
+			n.logger.Info("looking for peers...")
+
+			peersChan, err := rd.FindPeers(
+				ctx,
+				DiscoveryNamespace,
+				discovery2.Limit(100),
+			)
+			if err != nil {
+				n.logger.Error("failed trying to find peers", zap.Error(err))
+				continue
+			}
+
+			// read all channel messages to avoid blocking the find peer query
+			for _ = range peersChan {
+			}
+
+			n.logger.Info("done looking for peers",
+				zap.Int("peerCount", n.host.Peerstore().Peers().Len()),
+			)
+
+			<-time.After(time.Second * 2)
 		}
 	}()
 
@@ -376,11 +358,6 @@ func (n *node) GetNickname(ctx context.Context, peerID string) (string, error) {
 }
 
 func (n *node) Shutdown() error {
-	// kill find peers goroutine
-	if n.findPeersDoneChan != nil {
-		close(n.findPeersDoneChan)
-	}
-
 	return n.host.Close()
 }
 
