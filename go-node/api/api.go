@@ -29,10 +29,10 @@ func (s *Server) Ping(context.Context, *apigen.PingRequest) (*apigen.PingRespons
 	return &apigen.PingResponse{}, nil
 }
 
-func (s *Server) SendMessage(ctx context.Context, msg *apigen.SendMessageRequest) (*apigen.SendMessageResponse, error) {
+func (s *Server) SendMessage(ctx context.Context, request *apigen.SendMessageRequest) (*apigen.SendMessageResponse, error) {
 	s.logger.Info("handling SendMessage")
 
-	if err := s.node.SendMessage(ctx, msg.Value); err != nil {
+	if err := s.node.SendMessage(ctx, request.RoomName, request.Value); err != nil {
 		return nil, err
 	}
 
@@ -42,7 +42,7 @@ func (s *Server) SendMessage(ctx context.Context, msg *apigen.SendMessageRequest
 func (s *Server) GetNodeID(context.Context, *apigen.GetNodeIDRequest) (*apigen.GetNodeIDResponse, error) {
 	s.logger.Info("handling GetNodeID")
 
-	return &apigen.GetNodeIDResponse{Id: s.node.ID()}, nil
+	return &apigen.GetNodeIDResponse{Id: s.node.ID().Pretty()}, nil
 }
 
 func (s *Server) SetNickname(_ context.Context, request *apigen.SetNicknameRequest) (*apigen.SetNicknameResponse, error) {
@@ -70,20 +70,6 @@ func (s *Server) GetNickname(
 	}
 
 	return &apigen.GetNicknameResponse{Nickname: nickname}, nil
-}
-
-func (s *Server) GetCurrentRoomName(
-	context.Context,
-	*apigen.GetCurrentRoomNameRequest,
-) (*apigen.GetCurrentRoomNameResponse, error) {
-	s.logger.Info("handling GetCurrentRoomName")
-
-	roomName, err := s.node.CurrentRoomName()
-	if err != nil {
-		return nil, err
-	}
-
-	return &apigen.GetCurrentRoomNameResponse{RoomName: roomName}, nil
 }
 
 func (s *Server) SubscribeToEvents(

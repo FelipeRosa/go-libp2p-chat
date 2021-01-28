@@ -1,3 +1,5 @@
+.PHONY:
+
 build-all: build build-nodetool
 
 build-nodetool:
@@ -6,7 +8,7 @@ build-nodetool:
 build:
 	go build -o chat-gonode cmd/node/main.go
 
-gen: 
+gen: .PHONY
 	rm -rf gen
 	mkdir gen
 	protoc --go_out=. --go-grpc_out=. proto/api.proto

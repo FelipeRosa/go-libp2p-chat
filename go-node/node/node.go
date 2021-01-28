@@ -3,7 +3,6 @@ package node
 import (
 	"context"
 	"crypto/rand"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -28,15 +27,14 @@ import (
 const privKeyFileName = "libp2p-chat.privkey"
 
 type Node interface {
-	ID() string
+	ID() peer.ID
 
 	Start(ctx context.Context, port uint16) error
 	Bootstrap(ctx context.Context, nodeAddrs []multiaddr.Multiaddr) error
 
-	SendMessage(ctx context.Context, msg string) error
+	SendMessage(ctx context.Context, roomName string, msg string) error
 
-	JoinRoom(ctx context.Context, roomName string) error
-	CurrentRoomName() (string, error)
+	JoinRoom(roomName string) error
 
 	SetNickname(ctx context.Context, nickname string) error
 	GetNickname(ctx context.Context, peerID string) (string, error)
@@ -55,10 +53,8 @@ type node struct {
 
 	storeIdentity bool
 
-	ps              *pubsub.PubSub
-	topic           *pubsub.Topic
-	subscription    *pubsub.Subscription
-	currentRoomName string
+	ps          *pubsub.PubSub
+	roomManager *RoomManager
 
 	eventPublishers     []events.Publisher
 	eventPublishersLock sync.RWMutex
@@ -80,11 +76,11 @@ func NewNode(logger *zap.Logger, boostrapOnly bool, storeIdentity bool) Node {
 	}
 }
 
-func (n *node) ID() string {
+func (n *node) ID() peer.ID {
 	if n.host == nil {
 		return ""
 	}
-	return n.host.ID().Pretty()
+	return n.host.ID()
 }
 
 func (n *node) Start(ctx context.Context, port uint16) error {
@@ -114,6 +110,10 @@ func (n *node) Start(ctx context.Context, port uint16) error {
 		return errors.Wrap(err, "creating pubsub")
 	}
 	n.ps = ps
+
+	roomManager, roomManagerEvtSub := NewRoomManager(n.logger, n, n.ps)
+	n.roomManager = roomManager
+	go n.joinRoomManagerEvents(roomManagerEvtSub)
 
 	p2pAddr, err := multiaddr.NewMultiaddr(fmt.Sprintf("/p2p/%s", host.ID().Pretty()))
 	if err != nil {
@@ -205,13 +205,9 @@ func (n *node) Bootstrap(ctx context.Context, nodeAddrs []multiaddr.Multiaddr) e
 	return nil
 }
 
-func (n *node) SendMessage(ctx context.Context, msg string) error {
+func (n *node) SendMessage(ctx context.Context, roomName string, msg string) error {
 	if n.bootstrapOnly {
 		return errors.New("can't send message from a bootstrap-only node")
-	}
-
-	if n.topic == nil {
-		return errors.New("not connected to a room")
 	}
 
 	m := entities.Message{
@@ -220,59 +216,22 @@ func (n *node) SendMessage(ctx context.Context, msg string) error {
 		Value:     msg,
 	}
 
-	msgJSON, err := json.Marshal(m)
-	if err != nil {
-		return errors.Wrap(err, "marshalling message")
-	}
-
-	if err := n.topic.Publish(ctx, msgJSON); err != nil {
+	if err := n.roomManager.SendChatMessage(ctx, roomName, m); err != nil {
 		return errors.Wrap(err, "publishing message")
 	}
 
 	return nil
 }
 
-func (n *node) JoinRoom(ctx context.Context, roomName string) error {
+func (n *node) JoinRoom(roomName string) error {
 	if n.bootstrapOnly {
 		return errors.New("can't join room on a bootstrap-only node")
 	}
 
-	if n.subscription != nil {
-		return errors.New("changing rooms is not implemented yet")
+	if _, err := n.roomManager.JoinAndSubscribe(roomName); err != nil {
+		return err
 	}
-
-	n.logger.Debug("joining room topic", zap.String("name", roomName))
-	roomTopic, err := n.ps.Join(roomName)
-	if err != nil {
-		return errors.Wrap(err, "joining room topic")
-	}
-
-	n.logger.Debug("subscribing to room topic", zap.String("name", roomName))
-	roomSubscription, err := roomTopic.Subscribe()
-	if err != nil {
-		return errors.Wrap(err, "subscribing to room topic")
-	}
-
-	shouldStartSubLoop := n.subscription == nil
-
-	n.topic = roomTopic
-	n.subscription = roomSubscription
-
-	if shouldStartSubLoop {
-		go n.roomSubLoop(ctx)
-	}
-
-	n.currentRoomName = roomName
-
 	return nil
-}
-
-func (n *node) CurrentRoomName() (string, error) {
-	if n.bootstrapOnly {
-		return "", errors.New("can't get current room name from a bootstrap-only node")
-	}
-
-	return n.currentRoomName, nil
 }
 
 func (n *node) SetNickname(ctx context.Context, nickname string) error {
@@ -355,37 +314,13 @@ func (n *node) Shutdown() error {
 	return n.host.Close()
 }
 
-func (n *node) roomSubLoop(ctx context.Context) {
-	for {
-		subMsg, err := n.subscription.Next(ctx)
-		if err != nil {
-			n.logger.Error("failed receiving room message", zap.Error(err))
-			continue
-		}
-
-		if subMsg.ReceivedFrom == n.host.ID() {
-			continue
-		}
-
-		var msg entities.Message
-		if err := json.Unmarshal(subMsg.Data, &msg); err != nil {
-			n.logger.Warn("skipping message: failed unmarshalling")
-			continue
-		}
-
-		// Overwrite the sender ID
-		msg.SenderID = subMsg.GetFrom()
-		n.publishNewMessageToSubscribers(msg)
-	}
-}
-
-func (n *node) publishNewMessageToSubscribers(msg entities.Message) {
+func (n *node) publishEvent(evt events.Event) {
 	n.eventPublishersLock.RLock()
 	defer n.eventPublishersLock.RUnlock()
 
 	for _, pub := range n.eventPublishers {
-		if err := pub.Publish(&events.NewMessage{Message: msg}); err != nil {
-			n.logger.Error("publisher failed publishing new message", zap.Error(err))
+		if err := pub.Publish(evt); err != nil {
+			n.logger.Error("failed publishing node event", zap.Error(err))
 		}
 	}
 }
@@ -457,4 +392,15 @@ func (n *node) generateNewPrivKey() (crypto.PrivKey, error) {
 	n.logger.Info("generated new identity private key")
 
 	return privKey, nil
+}
+
+func (n *node) joinRoomManagerEvents(sub events.Subscriber) {
+	for {
+		evt, err := sub.Next()
+		if err != nil {
+			n.logger.Error("failed receiving room manager event", zap.Error(err))
+		}
+
+		n.publishEvent(evt)
+	}
 }
