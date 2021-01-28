@@ -36,6 +36,9 @@ export namespace PingResponse {
 }
 
 export class SendMessageRequest extends jspb.Message {
+  getRoomName(): string;
+  setRoomName(value: string): void;
+
   getValue(): string;
   setValue(value: string): void;
 
@@ -51,6 +54,7 @@ export class SendMessageRequest extends jspb.Message {
 
 export namespace SendMessageRequest {
   export type AsObject = {
+    roomName: string,
     value: string,
   }
 }
@@ -212,42 +216,6 @@ export class GetNicknameResponse extends jspb.Message {
 export namespace GetNicknameResponse {
   export type AsObject = {
     nickname: string,
-  }
-}
-
-export class GetCurrentRoomNameRequest extends jspb.Message {
-  serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): GetCurrentRoomNameRequest.AsObject;
-  static toObject(includeInstance: boolean, msg: GetCurrentRoomNameRequest): GetCurrentRoomNameRequest.AsObject;
-  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: GetCurrentRoomNameRequest, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): GetCurrentRoomNameRequest;
-  static deserializeBinaryFromReader(message: GetCurrentRoomNameRequest, reader: jspb.BinaryReader): GetCurrentRoomNameRequest;
-}
-
-export namespace GetCurrentRoomNameRequest {
-  export type AsObject = {
-  }
-}
-
-export class GetCurrentRoomNameResponse extends jspb.Message {
-  getRoomName(): string;
-  setRoomName(value: string): void;
-
-  serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): GetCurrentRoomNameResponse.AsObject;
-  static toObject(includeInstance: boolean, msg: GetCurrentRoomNameResponse): GetCurrentRoomNameResponse.AsObject;
-  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: GetCurrentRoomNameResponse, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): GetCurrentRoomNameResponse;
-  static deserializeBinaryFromReader(message: GetCurrentRoomNameResponse, reader: jspb.BinaryReader): GetCurrentRoomNameResponse;
-}
-
-export namespace GetCurrentRoomNameResponse {
-  export type AsObject = {
-    roomName: string,
   }
 }
 

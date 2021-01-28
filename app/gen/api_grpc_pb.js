@@ -15,28 +15,6 @@ function deserialize_api_Event(buffer_arg) {
   return api_pb.Event.deserializeBinary(new Uint8Array(buffer_arg));
 }
 
-function serialize_api_GetCurrentRoomNameRequest(arg) {
-  if (!(arg instanceof api_pb.GetCurrentRoomNameRequest)) {
-    throw new Error('Expected argument of type api.GetCurrentRoomNameRequest');
-  }
-  return Buffer.from(arg.serializeBinary());
-}
-
-function deserialize_api_GetCurrentRoomNameRequest(buffer_arg) {
-  return api_pb.GetCurrentRoomNameRequest.deserializeBinary(new Uint8Array(buffer_arg));
-}
-
-function serialize_api_GetCurrentRoomNameResponse(arg) {
-  if (!(arg instanceof api_pb.GetCurrentRoomNameResponse)) {
-    throw new Error('Expected argument of type api.GetCurrentRoomNameResponse');
-  }
-  return Buffer.from(arg.serializeBinary());
-}
-
-function deserialize_api_GetCurrentRoomNameResponse(buffer_arg) {
-  return api_pb.GetCurrentRoomNameResponse.deserializeBinary(new Uint8Array(buffer_arg));
-}
-
 function serialize_api_GetNicknameRequest(arg) {
   if (!(arg instanceof api_pb.GetNicknameRequest)) {
     throw new Error('Expected argument of type api.GetNicknameRequest');
@@ -214,17 +192,6 @@ var ApiService = exports.ApiService = {
     requestDeserialize: deserialize_api_GetNicknameRequest,
     responseSerialize: serialize_api_GetNicknameResponse,
     responseDeserialize: deserialize_api_GetNicknameResponse,
-  },
-  getCurrentRoomName: {
-    path: '/api.Api/GetCurrentRoomName',
-    requestStream: false,
-    responseStream: false,
-    requestType: api_pb.GetCurrentRoomNameRequest,
-    responseType: api_pb.GetCurrentRoomNameResponse,
-    requestSerialize: serialize_api_GetCurrentRoomNameRequest,
-    requestDeserialize: deserialize_api_GetCurrentRoomNameRequest,
-    responseSerialize: serialize_api_GetCurrentRoomNameResponse,
-    responseDeserialize: deserialize_api_GetCurrentRoomNameResponse,
   },
   subscribeToEvents: {
     path: '/api.Api/SubscribeToEvents',

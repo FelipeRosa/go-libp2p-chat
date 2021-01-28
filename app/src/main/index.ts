@@ -14,7 +14,6 @@ import * as path from "path"
 import { ApiClient } from "../../gen/api_grpc_pb"
 import {
     Event as ApiEvent,
-    GetCurrentRoomNameRequest,
     GetNicknameRequest,
     GetNodeIDRequest,
     SendMessageRequest,
@@ -282,44 +281,21 @@ app.whenReady().then(() => {
                     })
                     await setNickname
 
-                    const getCurrentRoomName = new Promise<string>(
-                        (resolve, reject) => {
-                            if (state.apiClient === null) {
-                                return reject()
-                            }
-
-                            state.apiClient.getCurrentRoomName(
-                                new GetCurrentRoomNameRequest(),
-                                (err, res) => {
-                                    if (err !== null) {
-                                        return reject()
-                                    }
-                                    resolve(
-                                        res?.getRoomName() || "No room name",
-                                    )
-                                },
-                            )
-                        },
-                    )
-                    const currentRoomName = await getCurrentRoomName
-
-                    return [nodeId, currentRoomName]
+                    return nodeId
                 }
 
                 tryConnect()
-                    .then((connectionData: string[] | null) => {
-                        if (connectionData === null) {
+                    .then((nodeId: string | null) => {
+                        if (nodeId === null) {
                             return
                         }
-
-                        const [nodeId, roomName] = connectionData
 
                         console.log(`connected to local node ID ${nodeId}`)
                         window.webContents.send("chat.connected", {
                             address: `/ip4/127.0.0.1/tcp/${nodePort}/p2p/${nodeId}`,
                             id: nodeId,
                             nickname: nickname,
-                            currentRoomName: roomName,
+                            currentRoomName: "global",
                         } as LocalNodeInfo)
                     })
                     .catch((err) => {
@@ -329,8 +305,9 @@ app.whenReady().then(() => {
         },
     )
 
-    ipcMain.on("chat.send", (_e, msg: string) => {
+    ipcMain.on("chat.send", (_e, msg: string, roomName: string) => {
         const request = new SendMessageRequest()
+        request.setRoomName(roomName)
         request.setValue(msg)
 
         state.apiClient?.sendMessage(request, (err, res) => {

@@ -148,7 +148,11 @@ const App = () => {
                 inputBox.current.value.trimEnd().length > 0
             ) {
                 const msg = inputBox.current.value.trimEnd()
-                ipcRenderer.send("chat.send", msg)
+                ipcRenderer.send(
+                    "chat.send",
+                    msg,
+                    state.localNodeInfo.currentRoomName,
+                )
                 inputBox.current.value = ""
 
                 dispatch({
