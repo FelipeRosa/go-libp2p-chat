@@ -120,7 +120,6 @@ func parseArgs() (cfg, error) {
 	var bootstrapNodeAddrs []multiaddr.Multiaddr
 	if *bootstrapNodes != "" {
 		for _, b := range strings.Split(*bootstrapNodes, ",") {
-			fmt.Println(b)
 			addr, err := multiaddr.NewMultiaddr(b)
 			if err != nil {
 				return cfg{}, errors.Wrap(err, "parsing bootstrap node addresses")
