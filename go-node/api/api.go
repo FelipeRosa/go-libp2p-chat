@@ -3,8 +3,8 @@ package api
 import (
 	"context"
 
-	"github.com/FelipeRosa/go-libp2p-chat/go-node/chat"
 	apigen "github.com/FelipeRosa/go-libp2p-chat/go-node/gen/api"
+	"github.com/FelipeRosa/go-libp2p-chat/go-node/node"
 
 	"go.uber.org/zap"
 )
@@ -13,10 +13,10 @@ type Server struct {
 	apigen.UnimplementedApiServer
 
 	logger *zap.Logger
-	node   chat.Node
+	node   node.Node
 }
 
-func NewServer(logger *zap.Logger, node chat.Node) *Server {
+func NewServer(logger *zap.Logger, node node.Node) *Server {
 	return &Server{
 		logger: logger,
 		node:   node,
@@ -37,32 +37,6 @@ func (s *Server) SendMessage(ctx context.Context, msg *apigen.SendMessageRequest
 	}
 
 	return &apigen.SendMessageResponse{Sent: true}, nil
-}
-
-func (s *Server) SubscribeToNewMessages(_ *apigen.SubscribeToNewMessagesRequest, stream apigen.Api_SubscribeToNewMessagesServer) error {
-	s.logger.Info("handling SubscribeToNewMessages")
-
-	sub, err := s.node.SubscribeToNewMessages()
-	if err != nil {
-		return err
-	}
-	defer sub.Close()
-
-	for {
-		msg := <-sub.Channel()
-
-		err := stream.Send(&apigen.ChatMessage{
-			SenderId:  msg.SenderID.Pretty(),
-			Timestamp: msg.Timestamp.Unix(),
-			Value:     msg.Value,
-		})
-		if err != nil {
-			s.logger.Debug("closing stream: failed sending chat message", zap.Error(err))
-			break
-		}
-	}
-
-	return nil
 }
 
 func (s *Server) GetNodeID(context.Context, *apigen.GetNodeIDRequest) (*apigen.GetNodeIDResponse, error) {
@@ -87,6 +61,8 @@ func (s *Server) GetNickname(
 	ctx context.Context,
 	request *apigen.GetNicknameRequest,
 ) (*apigen.GetNicknameResponse, error) {
+	s.logger.Info("handling GetNickname")
+
 	nickname, err := s.node.GetNickname(ctx, request.PeerId)
 	if err != nil {
 		s.logger.Error("failed getting peer nickname", zap.Error(err))
@@ -100,10 +76,36 @@ func (s *Server) GetCurrentRoomName(
 	context.Context,
 	*apigen.GetCurrentRoomNameRequest,
 ) (*apigen.GetCurrentRoomNameResponse, error) {
+	s.logger.Info("handling GetCurrentRoomName")
+
 	roomName, err := s.node.CurrentRoomName()
 	if err != nil {
 		return nil, err
 	}
 
 	return &apigen.GetCurrentRoomNameResponse{RoomName: roomName}, nil
+}
+
+func (s *Server) SubscribeToEvents(
+	_ *apigen.SubscribeToEventsRequest,
+	stream apigen.Api_SubscribeToEventsServer,
+) error {
+	s.logger.Info("handling SubscribeToEvents")
+
+	sub, err := s.node.SubscribeToEvents()
+	if err != nil {
+		return err
+	}
+	defer sub.Close()
+
+	for {
+		evt, err := sub.Next()
+		if err != nil {
+			return err
+		}
+
+		if err := stream.Send(evt.MarshalToProtobuf()); err != nil {
+			return err
+		}
+	}
 }

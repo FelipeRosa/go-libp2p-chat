@@ -11,8 +11,8 @@ import (
 	"syscall"
 
 	"github.com/FelipeRosa/go-libp2p-chat/go-node/api"
-	"github.com/FelipeRosa/go-libp2p-chat/go-node/chat"
 	apigen "github.com/FelipeRosa/go-libp2p-chat/go-node/gen/api"
+	"github.com/FelipeRosa/go-libp2p-chat/go-node/node"
 
 	"github.com/multiformats/go-multiaddr"
 	"github.com/pkg/errors"
@@ -42,7 +42,7 @@ func main() {
 		panic(err)
 	}
 
-	node := chat.NewNode(logger, cfg.BootstrapOnly, cfg.StoreIdentity)
+	node := node.NewNode(logger, cfg.BootstrapOnly, cfg.StoreIdentity)
 	if err := node.Start(ctx, cfg.NodePort); err != nil {
 		panic(err)
 	}
