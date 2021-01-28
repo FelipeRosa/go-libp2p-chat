@@ -11,12 +11,20 @@ const App = () => {
     const [state, dispatch] = useReducer(reducer, {
         connectionState: ConnState.Disconnected,
         localNodeInfo: null,
-        chat: { messages: [] },
+        chat: { contents: [] },
     })
 
     useEffect(() => {
-        ipcRenderer.on("chat.new-message", (_e, msg: ChatMessage) => {
+        ipcRenderer.on("room.new-message", (_e, msg: ChatMessage) => {
             dispatch({ type: "new-message", message: msg })
+        })
+
+        ipcRenderer.on("room.peer-joined", (_e, roomName, id) => {
+            dispatch({ type: "peer-joined", roomName, id })
+        })
+
+        ipcRenderer.on("room.peer-left", (_e, roomName, id) => {
+            dispatch({ type: "peer-left", roomName, id })
         })
 
         ipcRenderer.on("chat.connecting", () => {
@@ -25,6 +33,14 @@ const App = () => {
 
         ipcRenderer.on("chat.connected", (_e, localNodeInfo: LocalNodeInfo) => {
             dispatch({ type: "connected", localNodeInfo })
+            dispatch({
+                type: "new-notification",
+                message: {
+                    type: "notification",
+                    timestamp: Number(new Date()),
+                    value: "Connected",
+                },
+            })
         })
 
         ipcRenderer.on("chat.disconnected", () => {
@@ -32,7 +48,9 @@ const App = () => {
         })
 
         return () => {
-            ipcRenderer.removeAllListeners("chat.new-message")
+            ipcRenderer.removeAllListeners("room.new-message")
+            ipcRenderer.removeAllListeners("room.peer-joined")
+            ipcRenderer.removeAllListeners("room.peer-left")
             ipcRenderer.removeAllListeners("chat.connecting")
             ipcRenderer.removeAllListeners("chat.connected")
             ipcRenderer.removeAllListeners("chat.disconnected")
@@ -118,7 +136,7 @@ const App = () => {
     const Messages = () => {
         const {
             state: {
-                chat: { messages },
+                chat: { contents },
             },
             dispatch,
         } = useContext(AppStateContext)
@@ -131,7 +149,7 @@ const App = () => {
             if (msgsDiv.current !== null) {
                 msgsDiv.current.scrollTop = msgsDiv.current.scrollHeight
             }
-        }, [messages])
+        }, [contents])
 
         const formatTimestamp = (ts: number): string => {
             const d = new Date(ts * 1000)
@@ -158,6 +176,7 @@ const App = () => {
                 dispatch({
                     type: "new-message",
                     message: {
+                        type: "chat-message",
                         sender: {
                             id: state.localNodeInfo.id,
                             nickname: state.localNodeInfo.nickname,
@@ -186,20 +205,31 @@ const App = () => {
                     )}
                 </div>
 
-                <div className={"chat-messages"} ref={msgsDiv}>
-                    {messages.map((msg, index) => (
-                        <div key={index} className={"chat-message"}>
-                            <div className={"chat-message-timestamp"}>
-                                {formatTimestamp(msg.timestamp)}
+                <div className={"chat-contents"} ref={msgsDiv}>
+                    {contents.map((msg, index) =>
+                        msg.type === "chat-message" ? (
+                            <div key={index} className={"chat-message"}>
+                                <div className={"chat-message-timestamp"}>
+                                    {formatTimestamp(msg.timestamp)}
+                                </div>
+                                <div className={"chat-message-sender"}>
+                                    {msg.sender.nickname}
+                                </div>
+                                <div className={"chat-message-value"}>
+                                    {msg.value}
+                                </div>
                             </div>
-                            <div className={"chat-message-sender"}>
-                                {msg.sender.nickname}
+                        ) : (
+                            <div key={index} className={"chat-notification"}>
+                                <div className={"chat-message-timestamp"}>
+                                    {formatTimestamp(msg.timestamp)}
+                                </div>
+                                <div className={"chat-message-value"}>
+                                    {msg.value}
+                                </div>
                             </div>
-                            <div className={"chat-message-value"}>
-                                {msg.value}
-                            </div>
-                        </div>
-                    ))}
+                        ),
+                    )}
                 </div>
 
                 <div className={"chat-send"}>

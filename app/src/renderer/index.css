@@ -70,7 +70,7 @@ button, button[type="submit"], input[type="button"], input[type="submit"] {
     height: 100%;
 }
 
-.chat-messages {
+.chat-contents {
     display: flex;
     flex: 1 1 80%;
     flex-flow: column nowrap;
@@ -84,6 +84,9 @@ button, button[type="submit"], input[type="button"], input[type="submit"] {
 }
 
 .chat-message {
+    display: flex;
+    flex-flow: row wrap;
+
     margin: 4px 8px;
     padding: 4px;
 
@@ -92,6 +95,8 @@ button, button[type="submit"], input[type="button"], input[type="submit"] {
 }
 
 .chat-message-timestamp {
+    align-self: flex-end;
+
     display: inline-block;
     margin-right: 4px;
     font-size: 12px;
@@ -108,6 +113,17 @@ button, button[type="submit"], input[type="button"], input[type="submit"] {
 .chat-message-value {
     display: inline-block;
     align-self: flex-end;
+}
+
+.chat-notification {
+    display: flex;
+    flex-flow: row wrap;
+
+    margin: 4px 8px;
+    padding: 4px;
+
+    background-color: #44475a;
+    border-radius: 4px;
 }
 
 .chat-send {
@@ -194,7 +210,7 @@ button, button[type="submit"], input[type="button"], input[type="submit"] {
     margin-top: 16px;
 }
 
-.chat-messages::-webkit-scrollbar,
+.chat-contents::-webkit-scrollbar,
 #root::-webkit-scrollbar,
 input[type="textarea"]::-webkit-scrollbar,
 textarea::-webkit-scrollbar {
@@ -203,7 +219,7 @@ textarea::-webkit-scrollbar {
     background-color: #282a36;
 }
 
-.chat-messages::-webkit-scrollbar-thumb,
+.chat-contents::-webkit-scrollbar-thumb,
 #root::-webkit-scrollbar-thumb,
 input[type="textarea"]::-webkit-scrollbar-thumb,
 textarea::-webkit-scrollbar-thumb {

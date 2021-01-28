@@ -6,10 +6,18 @@ export enum ConnState {
     Connected,
 }
 
+export type NotificationMessage = {
+    type: "notification"
+    timestamp: number
+    value: string
+}
+
 export type AppState = {
-    connectionState: ConnState // for now we have only 1 chat room
+    connectionState: ConnState
     localNodeInfo: LocalNodeInfo | null
+
+    // only 1 room for now
     chat: {
-        messages: Array<ChatMessage>
+        contents: Array<ChatMessage | NotificationMessage>
     }
 }

@@ -11,7 +11,7 @@ export const AppStateContext = createContext<AppStateContextValue>({
     state: {
         connectionState: ConnState.Disconnected,
         localNodeInfo: null,
-        chat: { messages: [] },
+        chat: { contents: [] },
     },
     dispatch: () => {},
 })

@@ -1,28 +1,64 @@
 import { ChatMessage, LocalNodeInfo } from "../common/ipc"
-import { AppState, ConnState } from "./entities"
+import { AppState, ConnState, NotificationMessage } from "./entities"
 
 export type Msg =
     | {
-    type: "new-message"
-    message: ChatMessage
-}
+          type: "new-message"
+          message: ChatMessage
+      }
+    | {
+          type: "new-notification"
+          message: NotificationMessage
+      }
+    | {
+          type: "peer-joined"
+          roomName: string
+          id: string
+      }
+    | {
+          type: "peer-left"
+          roomName: string
+          id: string
+      }
     | { type: "connecting" }
     | {
-    type: "connected"
-    localNodeInfo: LocalNodeInfo
-}
+          type: "connected"
+          localNodeInfo: LocalNodeInfo
+      }
     | { type: "disconnected" }
+
+const addContent: (
+    state: AppState,
+    content: ChatMessage | NotificationMessage,
+) => AppState = (state, content) => {
+    const contents = [...state.chat.contents]
+    contents.push(content)
+
+    return {
+        ...state,
+        chat: { ...state.chat, contents },
+    }
+}
 
 export function reducer(prevState: AppState, msg: Msg): AppState {
     switch (msg.type) {
         case "new-message":
-            const messages = [...prevState.chat.messages]
-            messages.push(msg.message)
+        case "new-notification":
+            return addContent(prevState, msg.message)
 
-            return {
-                ...prevState,
-                chat: { messages },
-            }
+        case "peer-joined":
+            return addContent(prevState, {
+                type: "notification",
+                timestamp: Number(new Date()),
+                value: `Peer joined: ${msg.id}`,
+            })
+
+        case "peer-left":
+            return addContent(prevState, {
+                type: "notification",
+                timestamp: Number(new Date()),
+                value: `Peer left: ${msg.id}`,
+            })
 
         case "connecting":
             return {
