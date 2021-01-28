@@ -170,7 +170,7 @@ func (n *node) Bootstrap(ctx context.Context, nodeAddrs []multiaddr.Multiaddr) e
 	n.logger.Info("starting advertising thread")
 	discovery.Advertise(ctx, rd, DiscoveryNamespace)
 
-	// try finding more peers every 2 minutes
+	// try finding more peers
 	go func() {
 		for {
 			n.logger.Info("looking for peers...")
@@ -193,7 +193,7 @@ func (n *node) Bootstrap(ctx context.Context, nodeAddrs []multiaddr.Multiaddr) e
 				zap.Int("peerCount", n.host.Peerstore().Peers().Len()),
 			)
 
-			<-time.After(time.Second * 2)
+			<-time.After(time.Minute)
 		}
 	}()
 
