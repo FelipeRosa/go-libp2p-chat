@@ -53,14 +53,30 @@ message GetNicknameResponse {
 
 message SubscribeToEventsRequest {}
 
+// Events
+message EvtNewChatMessage {
+  ChatMessage chat_message = 1;
+}
+message EvtPeerJoined {
+  string room_name = 1;
+  string peer_id = 2;
+}
+message EvtPeerLeft {
+  string room_name = 1;
+  string peer_id = 2;
+}
+
 message Event {
   enum Type {
     UNKNOWN = 0;
     NEW_CHAT_MESSAGE = 1;
+    PEER_JOINED = 2;
+    PEER_LEFT = 3;
   }
 
   Type type = 1;
 
-  // type-dependent payloads
-  ChatMessage chat_message = 2;
+  EvtNewChatMessage new_chat_message = 2;
+  EvtPeerJoined peer_joined = 3;
+  EvtPeerLeft peer_left = 4;
 }

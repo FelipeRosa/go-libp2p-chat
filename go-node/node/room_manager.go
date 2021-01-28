@@ -24,7 +24,7 @@ const (
 // RoomMessageOut holds data to be published in a topic.
 type RoomMessageOut struct {
 	Type    RoomMessageType `json:"type"`
-	Payload interface{}     `json:"payload"`
+	Payload interface{}     `json:"payload,omitempty"`
 }
 
 // RoomMessageIn holds data to be received from a topic.
@@ -32,7 +32,7 @@ type RoomMessageOut struct {
 // The Payload field is lazily unmarshalled because it depends on the type of message published.
 type RoomMessageIn struct {
 	Type    RoomMessageType `json:"type"`
-	Payload json.RawMessage `json:"payload"`
+	Payload json.RawMessage `json:"payload,omitempty"`
 }
 
 // Room holds room event and pubsub data.
@@ -79,6 +79,15 @@ func (r *RoomManager) JoinAndSubscribe(roomName string) (bool, error) {
 
 	logger := r.logger.With(zap.String("topic", roomName))
 
+	cleanup := func(topic *pubsub.Topic, subscription *pubsub.Subscription) {
+		if topic != nil {
+			_ = topic.Close()
+		}
+		if subscription != nil {
+			subscription.Cancel()
+		}
+	}
+
 	logger.Debug("joining room topic")
 	topicName := r.TopicName(roomName)
 	topic, err := r.ps.Join(topicName)
@@ -91,6 +100,9 @@ func (r *RoomManager) JoinAndSubscribe(roomName string) (bool, error) {
 	subscription, err := topic.Subscribe()
 	if err != nil {
 		logger.Debug("failed subscribing to room topic")
+
+		cleanup(topic, subscription)
+		return false, err
 	}
 
 	room := &Room{
@@ -99,8 +111,10 @@ func (r *RoomManager) JoinAndSubscribe(roomName string) (bool, error) {
 	}
 
 	r.putRoom(room)
-	go r.roomHandler(room)
+	go r.roomTopicEventHandler(room)
+	go r.roomSubscriptionHandler(room)
 
+	logger.Debug("successfully joined room")
 	return true, nil
 }
 
@@ -157,7 +171,46 @@ func (r *RoomManager) getRoom(roomName string) (*Room, bool) {
 	return room, found
 }
 
-func (r *RoomManager) roomHandler(room *Room) {
+func (r *RoomManager) roomTopicEventHandler(room *Room) {
+	handler, err := room.topic.EventHandler()
+	if err != nil {
+		r.logger.Error("failed getting room topic event handler", zap.Error(err))
+	}
+
+	for {
+		peerEvt, err := handler.NextPeerEvent(context.Background())
+		if err != nil {
+			r.logger.Error("failed receiving room topic peer event", zap.Error(err))
+			continue
+		}
+
+		var evt events.Event
+
+		switch peerEvt.Type {
+		case pubsub.PeerJoin:
+			evt = &events.PeerJoined{
+				PeerID:   peerEvt.Peer,
+				RoomName: room.topic.String(),
+			}
+
+		case pubsub.PeerLeave:
+			evt = &events.PeerLeft{
+				PeerID:   peerEvt.Peer,
+				RoomName: room.topic.String(),
+			}
+		}
+
+		if evt == nil {
+			continue
+		}
+
+		if err := r.eventPublisher.Publish(evt); err != nil {
+			r.logger.Error("failed publishing room manager event", zap.Error(err))
+		}
+	}
+}
+
+func (r *RoomManager) roomSubscriptionHandler(room *Room) {
 	for {
 		subMsg, err := room.subscription.Next(context.Background())
 		if err != nil {
