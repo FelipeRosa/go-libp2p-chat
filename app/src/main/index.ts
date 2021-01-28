@@ -216,9 +216,11 @@ app.whenReady().then(() => {
                                         "handling NEW_CHAT_MESSAGE event",
                                     )
 
-                                    const msg = evt.getChatMessage()
+                                    const msg = evt
+                                        .getNewChatMessage()
+                                        ?.getChatMessage()
                                     if (!msg) {
-                                        console.log("missing chat message")
+                                        console.error("missing chat message")
                                         return
                                     }
 
@@ -231,6 +233,7 @@ app.whenReady().then(() => {
                                         getNicknameReq,
                                         (err, res) => {
                                             const chatMessage: ChatMessage = {
+                                                type: "chat-message",
                                                 sender: {
                                                     id: senderId,
                                                     nickname:
@@ -242,12 +245,42 @@ app.whenReady().then(() => {
                                             }
 
                                             window.webContents.send(
-                                                `chat.new-message`,
+                                                `room.new-message`,
                                                 chatMessage,
                                             )
                                         },
                                     )
                                 }
+                                break
+
+                            case ApiEvent.Type.PEER_JOINED:
+                                console.log("handling PEER_JOINED event")
+
+                                const joinInfo = evt.getPeerJoined()
+                                if (!joinInfo) {
+                                    console.error("missing join information")
+                                }
+
+                                window.webContents.send(
+                                    "room.peer-joined",
+                                    joinInfo?.getRoomName(),
+                                    joinInfo?.getPeerId(),
+                                )
+                                break
+
+                            case ApiEvent.Type.PEER_LEFT:
+                                console.log("handling PEER_LEFT event")
+
+                                const leftInfo = evt.getPeerLeft()
+                                if (!leftInfo) {
+                                    console.error("missing left information")
+                                }
+
+                                window.webContents.send(
+                                    "room.peer-left",
+                                    leftInfo?.getRoomName(),
+                                    leftInfo?.getPeerId(),
+                                )
                                 break
 
                             default:

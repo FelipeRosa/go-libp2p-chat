@@ -235,14 +235,94 @@ export namespace SubscribeToEventsRequest {
   }
 }
 
-export class Event extends jspb.Message {
-  getType(): Event.TypeMap[keyof Event.TypeMap];
-  setType(value: Event.TypeMap[keyof Event.TypeMap]): void;
-
+export class EvtNewChatMessage extends jspb.Message {
   hasChatMessage(): boolean;
   clearChatMessage(): void;
   getChatMessage(): ChatMessage | undefined;
   setChatMessage(value?: ChatMessage): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): EvtNewChatMessage.AsObject;
+  static toObject(includeInstance: boolean, msg: EvtNewChatMessage): EvtNewChatMessage.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: EvtNewChatMessage, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): EvtNewChatMessage;
+  static deserializeBinaryFromReader(message: EvtNewChatMessage, reader: jspb.BinaryReader): EvtNewChatMessage;
+}
+
+export namespace EvtNewChatMessage {
+  export type AsObject = {
+    chatMessage?: ChatMessage.AsObject,
+  }
+}
+
+export class EvtPeerJoined extends jspb.Message {
+  getRoomName(): string;
+  setRoomName(value: string): void;
+
+  getPeerId(): string;
+  setPeerId(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): EvtPeerJoined.AsObject;
+  static toObject(includeInstance: boolean, msg: EvtPeerJoined): EvtPeerJoined.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: EvtPeerJoined, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): EvtPeerJoined;
+  static deserializeBinaryFromReader(message: EvtPeerJoined, reader: jspb.BinaryReader): EvtPeerJoined;
+}
+
+export namespace EvtPeerJoined {
+  export type AsObject = {
+    roomName: string,
+    peerId: string,
+  }
+}
+
+export class EvtPeerLeft extends jspb.Message {
+  getRoomName(): string;
+  setRoomName(value: string): void;
+
+  getPeerId(): string;
+  setPeerId(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): EvtPeerLeft.AsObject;
+  static toObject(includeInstance: boolean, msg: EvtPeerLeft): EvtPeerLeft.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: EvtPeerLeft, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): EvtPeerLeft;
+  static deserializeBinaryFromReader(message: EvtPeerLeft, reader: jspb.BinaryReader): EvtPeerLeft;
+}
+
+export namespace EvtPeerLeft {
+  export type AsObject = {
+    roomName: string,
+    peerId: string,
+  }
+}
+
+export class Event extends jspb.Message {
+  getType(): Event.TypeMap[keyof Event.TypeMap];
+  setType(value: Event.TypeMap[keyof Event.TypeMap]): void;
+
+  hasNewChatMessage(): boolean;
+  clearNewChatMessage(): void;
+  getNewChatMessage(): EvtNewChatMessage | undefined;
+  setNewChatMessage(value?: EvtNewChatMessage): void;
+
+  hasPeerJoined(): boolean;
+  clearPeerJoined(): void;
+  getPeerJoined(): EvtPeerJoined | undefined;
+  setPeerJoined(value?: EvtPeerJoined): void;
+
+  hasPeerLeft(): boolean;
+  clearPeerLeft(): void;
+  getPeerLeft(): EvtPeerLeft | undefined;
+  setPeerLeft(value?: EvtPeerLeft): void;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): Event.AsObject;
@@ -257,12 +337,16 @@ export class Event extends jspb.Message {
 export namespace Event {
   export type AsObject = {
     type: Event.TypeMap[keyof Event.TypeMap],
-    chatMessage?: ChatMessage.AsObject,
+    newChatMessage?: EvtNewChatMessage.AsObject,
+    peerJoined?: EvtPeerJoined.AsObject,
+    peerLeft?: EvtPeerLeft.AsObject,
   }
 
   export interface TypeMap {
     UNKNOWN: 0;
     NEW_CHAT_MESSAGE: 1;
+    PEER_JOINED: 2;
+    PEER_LEFT: 3;
   }
 
   export const Type: TypeMap;

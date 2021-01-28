@@ -1,4 +1,5 @@
 export type ChatMessage = {
+    type: "chat-message"
     sender: {
         id: string
         nickname: string
