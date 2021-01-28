@@ -1,4 +1,4 @@
-package chat
+package node
 
 type validator struct{}
 

@@ -7,7 +7,6 @@ service Api {
   rpc Ping(PingRequest) returns (PingResponse);
 
   rpc SendMessage(SendMessageRequest) returns (SendMessageResponse);
-  rpc SubscribeToNewMessages(SubscribeToNewMessagesRequest) returns (stream ChatMessage);
 
   rpc GetNodeID(GetNodeIDRequest) returns (GetNodeIDResponse);
 
@@ -15,12 +14,12 @@ service Api {
   rpc GetNickname(GetNicknameRequest) returns (GetNicknameResponse);
 
   rpc GetCurrentRoomName(GetCurrentRoomNameRequest) returns (GetCurrentRoomNameResponse);
+
+  rpc SubscribeToEvents(SubscribeToEventsRequest) returns (stream Event);
 }
 
 message PingRequest {}
 message PingResponse {}
-
-message SubscribeToNewMessagesRequest {}
 
 message SendMessageRequest {
   string value = 1;
@@ -56,4 +55,18 @@ message GetNicknameResponse {
 message GetCurrentRoomNameRequest {}
 message GetCurrentRoomNameResponse {
   string room_name = 1;
+}
+
+message SubscribeToEventsRequest {}
+
+message Event {
+  enum Type {
+    UNKNOWN = 0;
+    NEW_CHAT_MESSAGE = 1;
+  }
+
+  Type type = 1;
+
+  // type-dependent payloads
+  ChatMessage chat_message = 2;
 }

@@ -35,22 +35,6 @@ export namespace PingResponse {
   }
 }
 
-export class SubscribeToNewMessagesRequest extends jspb.Message {
-  serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): SubscribeToNewMessagesRequest.AsObject;
-  static toObject(includeInstance: boolean, msg: SubscribeToNewMessagesRequest): SubscribeToNewMessagesRequest.AsObject;
-  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: SubscribeToNewMessagesRequest, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): SubscribeToNewMessagesRequest;
-  static deserializeBinaryFromReader(message: SubscribeToNewMessagesRequest, reader: jspb.BinaryReader): SubscribeToNewMessagesRequest;
-}
-
-export namespace SubscribeToNewMessagesRequest {
-  export type AsObject = {
-  }
-}
-
 export class SendMessageRequest extends jspb.Message {
   getValue(): string;
   setValue(value: string): void;
@@ -265,5 +249,54 @@ export namespace GetCurrentRoomNameResponse {
   export type AsObject = {
     roomName: string,
   }
+}
+
+export class SubscribeToEventsRequest extends jspb.Message {
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): SubscribeToEventsRequest.AsObject;
+  static toObject(includeInstance: boolean, msg: SubscribeToEventsRequest): SubscribeToEventsRequest.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: SubscribeToEventsRequest, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): SubscribeToEventsRequest;
+  static deserializeBinaryFromReader(message: SubscribeToEventsRequest, reader: jspb.BinaryReader): SubscribeToEventsRequest;
+}
+
+export namespace SubscribeToEventsRequest {
+  export type AsObject = {
+  }
+}
+
+export class Event extends jspb.Message {
+  getType(): Event.TypeMap[keyof Event.TypeMap];
+  setType(value: Event.TypeMap[keyof Event.TypeMap]): void;
+
+  hasChatMessage(): boolean;
+  clearChatMessage(): void;
+  getChatMessage(): ChatMessage | undefined;
+  setChatMessage(value?: ChatMessage): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): Event.AsObject;
+  static toObject(includeInstance: boolean, msg: Event): Event.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: Event, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): Event;
+  static deserializeBinaryFromReader(message: Event, reader: jspb.BinaryReader): Event;
+}
+
+export namespace Event {
+  export type AsObject = {
+    type: Event.TypeMap[keyof Event.TypeMap],
+    chatMessage?: ChatMessage.AsObject,
+  }
+
+  export interface TypeMap {
+    UNKNOWN: 0;
+    NEW_CHAT_MESSAGE: 1;
+  }
+
+  export const Type: TypeMap;
 }
 

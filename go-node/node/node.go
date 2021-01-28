@@ -1,4 +1,4 @@
-package chat
+package node
 
 import (
 	"context"
@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/FelipeRosa/go-libp2p-chat/go-node/entities"
+	"github.com/FelipeRosa/go-libp2p-chat/go-node/events"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-core/crypto"
 	discovery2 "github.com/libp2p/go-libp2p-core/discovery"
@@ -27,15 +29,20 @@ const privKeyFileName = "libp2p-chat.privkey"
 
 type Node interface {
 	ID() string
+
 	Start(ctx context.Context, port uint16) error
 	Bootstrap(ctx context.Context, nodeAddrs []multiaddr.Multiaddr) error
+
 	SendMessage(ctx context.Context, msg string) error
-	GetMessages() ([]Message, error)
-	SubscribeToNewMessages() (*NewMessageSubscription, error)
+
 	JoinRoom(ctx context.Context, roomName string) error
 	CurrentRoomName() (string, error)
+
 	SetNickname(ctx context.Context, nickname string) error
 	GetNickname(ctx context.Context, peerID string) (string, error)
+
+	SubscribeToEvents() (events.Subscriber, error)
+
 	Shutdown() error
 }
 
@@ -48,14 +55,13 @@ type node struct {
 
 	storeIdentity bool
 
-	ps           *pubsub.PubSub
-	topic        *pubsub.Topic
-	subscription *pubsub.Subscription
-	messageStore *MessageStore
+	ps              *pubsub.PubSub
+	topic           *pubsub.Topic
+	subscription    *pubsub.Subscription
+	currentRoomName string
 
-	newMessageSubscriptionsLock sync.Mutex
-	newMessageSubscriptions     []*NewMessageSubscription
-	currentRoomName             string
+	eventPublishers     []events.Publisher
+	eventPublishersLock sync.RWMutex
 
 	nicknameStoreMutex   sync.Mutex
 	nicknameStoreWaiting bool
@@ -71,7 +77,6 @@ func NewNode(logger *zap.Logger, boostrapOnly bool, storeIdentity bool) Node {
 		host:          nil,
 		bootstrapOnly: boostrapOnly,
 		storeIdentity: storeIdentity,
-		messageStore:  NewMessageStore(3),
 	}
 }
 
@@ -83,7 +88,7 @@ func (n *node) ID() string {
 }
 
 func (n *node) Start(ctx context.Context, port uint16) error {
-	n.logger.Info("starting chat node", zap.Bool("bootstrapOnly", n.bootstrapOnly))
+	n.logger.Info("starting node", zap.Bool("bootstrapOnly", n.bootstrapOnly))
 
 	nodeAddrStrings := []string{fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", port)}
 
@@ -120,7 +125,7 @@ func (n *node) Start(ctx context.Context, port uint16) error {
 		fullAddrs = append(fullAddrs, addr.Encapsulate(p2pAddr).String())
 	}
 
-	n.logger.Info("started chat node", zap.Strings("p2pAddresses", fullAddrs))
+	n.logger.Info("started node", zap.Strings("p2pAddresses", fullAddrs))
 	return nil
 }
 
@@ -209,7 +214,7 @@ func (n *node) SendMessage(ctx context.Context, msg string) error {
 		return errors.New("not connected to a room")
 	}
 
-	m := Message{
+	m := entities.Message{
 		SenderID:  n.host.ID(),
 		Timestamp: time.Now(),
 		Value:     msg,
@@ -225,31 +230,6 @@ func (n *node) SendMessage(ctx context.Context, msg string) error {
 	}
 
 	return nil
-}
-
-func (n *node) GetMessages() ([]Message, error) {
-	if n.bootstrapOnly {
-		return nil, errors.New("can't get messages from a bootstrap-only node")
-	}
-
-	return n.messageStore.Messages(), nil
-}
-
-func (n *node) SubscribeToNewMessages() (*NewMessageSubscription, error) {
-	if n.bootstrapOnly {
-		return nil, errors.New("can't subscribe to new messages on a bootstrap-only node")
-	}
-
-	sub := &NewMessageSubscription{
-		messageCh: make(chan Message),
-		doneCh:    make(chan struct{}, 1),
-	}
-
-	defer n.newMessageSubscriptionsLock.Unlock()
-	n.newMessageSubscriptionsLock.Lock()
-	n.newMessageSubscriptions = append(n.newMessageSubscriptions, sub)
-
-	return sub, nil
 }
 
 func (n *node) JoinRoom(ctx context.Context, roomName string) error {
@@ -350,11 +330,25 @@ func (n *node) SetNickname(ctx context.Context, nickname string) error {
 }
 
 func (n *node) GetNickname(ctx context.Context, peerID string) (string, error) {
-	nickname, err := n.kadDHT.GetValue(ctx, fmt.Sprintf("chat/%s_nickname", peerID))
+	nickname, err := n.kadDHT.GetValue(ctx, fmt.Sprintf("%s/%s_nickname", DiscoveryNamespace, peerID))
 	if err != nil {
 		return "", errors.Wrap(err, "getting peer nickname from DHT")
 	}
 	return string(nickname), nil
+}
+
+func (n *node) SubscribeToEvents() (events.Subscriber, error) {
+	if n.bootstrapOnly {
+		return nil, errors.New("can't subscribe to events on a bootstrap-only node")
+	}
+
+	pub, sub := events.NewSubscription()
+
+	n.eventPublishersLock.Lock()
+	defer n.eventPublishersLock.Unlock()
+	n.eventPublishers = append(n.eventPublishers, pub)
+
+	return sub, nil
 }
 
 func (n *node) Shutdown() error {
@@ -373,7 +367,7 @@ func (n *node) roomSubLoop(ctx context.Context) {
 			continue
 		}
 
-		var msg Message
+		var msg entities.Message
 		if err := json.Unmarshal(subMsg.Data, &msg); err != nil {
 			n.logger.Warn("skipping message: failed unmarshalling")
 			continue
@@ -381,40 +375,24 @@ func (n *node) roomSubLoop(ctx context.Context) {
 
 		// Overwrite the sender ID
 		msg.SenderID = subMsg.GetFrom()
-		n.messageStore.Push(msg)
 		n.publishNewMessageToSubscribers(msg)
 	}
 }
 
-func (n *node) publishNewMessageToSubscribers(msg Message) {
-	defer n.newMessageSubscriptionsLock.Unlock()
-	n.newMessageSubscriptionsLock.Lock()
+func (n *node) publishNewMessageToSubscribers(msg entities.Message) {
+	n.eventPublishersLock.RLock()
+	defer n.eventPublishersLock.RUnlock()
 
-	var subscriptions []*NewMessageSubscription
-
-	// Filter out closed subscriptions
-	for _, sub := range n.newMessageSubscriptions {
-		select {
-		case <-sub.doneCh:
-			close(sub.messageCh)
-
-		default:
-			subscriptions = append(subscriptions, sub)
-		}
-	}
-	n.newMessageSubscriptions = subscriptions
-
-	for _, sub := range n.newMessageSubscriptions {
-		// Try publishing. Subscription will miss the message if blocked.
-		select {
-		case sub.messageCh <- msg:
+	for _, pub := range n.eventPublishers {
+		if err := pub.Publish(&events.NewMessage{Message: msg}); err != nil {
+			n.logger.Error("publisher failed publishing new message", zap.Error(err))
 		}
 	}
 }
 
 func (n *node) storeNickname(ctx context.Context, nickname string) error {
 	n.logger.Debug("storing nickname in DHT")
-	err := n.kadDHT.PutValue(ctx, fmt.Sprintf("chat/%s_nickname", n.ID()), []byte(nickname))
+	err := n.kadDHT.PutValue(ctx, fmt.Sprintf("%s/%s_nickname", DiscoveryNamespace, n.ID()), []byte(nickname))
 	if err != nil {
 		return errors.Wrap(err, "storing nickname in DHT")
 	}

@@ -4,15 +4,15 @@
 var grpc = require('@grpc/grpc-js');
 var api_pb = require('./api_pb.js');
 
-function serialize_api_ChatMessage(arg) {
-  if (!(arg instanceof api_pb.ChatMessage)) {
-    throw new Error('Expected argument of type api.ChatMessage');
+function serialize_api_Event(arg) {
+  if (!(arg instanceof api_pb.Event)) {
+    throw new Error('Expected argument of type api.Event');
   }
   return Buffer.from(arg.serializeBinary());
 }
 
-function deserialize_api_ChatMessage(buffer_arg) {
-  return api_pb.ChatMessage.deserializeBinary(new Uint8Array(buffer_arg));
+function deserialize_api_Event(buffer_arg) {
+  return api_pb.Event.deserializeBinary(new Uint8Array(buffer_arg));
 }
 
 function serialize_api_GetCurrentRoomNameRequest(arg) {
@@ -147,15 +147,15 @@ function deserialize_api_SetNicknameResponse(buffer_arg) {
   return api_pb.SetNicknameResponse.deserializeBinary(new Uint8Array(buffer_arg));
 }
 
-function serialize_api_SubscribeToNewMessagesRequest(arg) {
-  if (!(arg instanceof api_pb.SubscribeToNewMessagesRequest)) {
-    throw new Error('Expected argument of type api.SubscribeToNewMessagesRequest');
+function serialize_api_SubscribeToEventsRequest(arg) {
+  if (!(arg instanceof api_pb.SubscribeToEventsRequest)) {
+    throw new Error('Expected argument of type api.SubscribeToEventsRequest');
   }
   return Buffer.from(arg.serializeBinary());
 }
 
-function deserialize_api_SubscribeToNewMessagesRequest(buffer_arg) {
-  return api_pb.SubscribeToNewMessagesRequest.deserializeBinary(new Uint8Array(buffer_arg));
+function deserialize_api_SubscribeToEventsRequest(buffer_arg) {
+  return api_pb.SubscribeToEventsRequest.deserializeBinary(new Uint8Array(buffer_arg));
 }
 
 
@@ -181,17 +181,6 @@ var ApiService = exports.ApiService = {
     requestDeserialize: deserialize_api_SendMessageRequest,
     responseSerialize: serialize_api_SendMessageResponse,
     responseDeserialize: deserialize_api_SendMessageResponse,
-  },
-  subscribeToNewMessages: {
-    path: '/api.Api/SubscribeToNewMessages',
-    requestStream: false,
-    responseStream: true,
-    requestType: api_pb.SubscribeToNewMessagesRequest,
-    responseType: api_pb.ChatMessage,
-    requestSerialize: serialize_api_SubscribeToNewMessagesRequest,
-    requestDeserialize: deserialize_api_SubscribeToNewMessagesRequest,
-    responseSerialize: serialize_api_ChatMessage,
-    responseDeserialize: deserialize_api_ChatMessage,
   },
   getNodeID: {
     path: '/api.Api/GetNodeID',
@@ -236,6 +225,17 @@ var ApiService = exports.ApiService = {
     requestDeserialize: deserialize_api_GetCurrentRoomNameRequest,
     responseSerialize: serialize_api_GetCurrentRoomNameResponse,
     responseDeserialize: deserialize_api_GetCurrentRoomNameResponse,
+  },
+  subscribeToEvents: {
+    path: '/api.Api/SubscribeToEvents',
+    requestStream: false,
+    responseStream: true,
+    requestType: api_pb.SubscribeToEventsRequest,
+    responseType: api_pb.Event,
+    requestSerialize: serialize_api_SubscribeToEventsRequest,
+    requestDeserialize: deserialize_api_SubscribeToEventsRequest,
+    responseSerialize: serialize_api_Event,
+    responseDeserialize: deserialize_api_Event,
   },
 };
 

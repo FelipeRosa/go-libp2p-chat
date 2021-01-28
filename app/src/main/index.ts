@@ -13,32 +13,32 @@ import getPort from "get-port"
 import * as path from "path"
 import { ApiClient } from "../../gen/api_grpc_pb"
 import {
-    ChatMessage as ApiChatMessage,
+    Event as ApiEvent,
     GetCurrentRoomNameRequest,
     GetNicknameRequest,
     GetNodeIDRequest,
     SendMessageRequest,
     SetNicknameRequest,
-    SubscribeToNewMessagesRequest,
+    SubscribeToEventsRequest,
 } from "../../gen/api_pb"
 import { ChatMessage, LocalNodeInfo } from "../common/ipc"
 
 class State {
     goNode: ChildProcessWithoutNullStreams | null
     apiClient: ApiClient | null
-    newMessagesStream: grpc.ClientReadableStream<ApiChatMessage> | null
+    eventStream: grpc.ClientReadableStream<ApiEvent> | null
     connecting: boolean
 
     constructor() {
         this.goNode = null
         this.apiClient = null
-        this.newMessagesStream = null
+        this.eventStream = null
         this.connecting = false
     }
 
     close() {
-        this.newMessagesStream?.cancel()
-        this.newMessagesStream = null
+        this.eventStream?.cancel()
+        this.eventStream = null
 
         this.apiClient?.close()
         this.apiClient = null
@@ -206,49 +206,63 @@ app.whenReady().then(() => {
                         return null
                     }
 
-                    // subscribe to new messages
-                    state.newMessagesStream = state.apiClient.subscribeToNewMessages(
-                        new SubscribeToNewMessagesRequest(),
+                    state.eventStream = state.apiClient.subscribeToEvents(
+                        new SubscribeToEventsRequest(),
                     )
-                    state.newMessagesStream.on(
-                        "data",
-                        (msg: ApiChatMessage) => {
-                            const senderId = msg.getSenderId()
+                    state.eventStream.on("data", (evt: ApiEvent) => {
+                        switch (evt.getType()) {
+                            case ApiEvent.Type.NEW_CHAT_MESSAGE:
+                                {
+                                    console.log(
+                                        "handling NEW_CHAT_MESSAGE event",
+                                    )
 
-                            // need to get the sender nickname
-                            const getNicknameReq = new GetNicknameRequest()
-                            getNicknameReq.setPeerId(senderId)
-                            state.apiClient?.getNickname(
-                                getNicknameReq,
-                                (err, res) => {
-                                    const chatMessage: ChatMessage = {
-                                        sender: {
-                                            id: senderId,
-                                            nickname:
-                                                res?.getNickname() || "Unnamed",
-                                        },
-                                        timestamp: msg.getTimestamp(),
-                                        value: msg.getValue(),
+                                    const msg = evt.getChatMessage()
+                                    if (!msg) {
+                                        console.log("missing chat message")
+                                        return
                                     }
 
-                                    window.webContents.send(
-                                        `chat.new-message`,
-                                        chatMessage,
+                                    const senderId = msg.getSenderId()
+
+                                    // need to get the sender nickname
+                                    const getNicknameReq = new GetNicknameRequest()
+                                    getNicknameReq.setPeerId(senderId)
+                                    state.apiClient?.getNickname(
+                                        getNicknameReq,
+                                        (err, res) => {
+                                            const chatMessage: ChatMessage = {
+                                                sender: {
+                                                    id: senderId,
+                                                    nickname:
+                                                        res?.getNickname() ||
+                                                        "Unnamed",
+                                                },
+                                                timestamp: msg.getTimestamp(),
+                                                value: msg.getValue(),
+                                            }
+
+                                            window.webContents.send(
+                                                `chat.new-message`,
+                                                chatMessage,
+                                            )
+                                        },
                                     )
-                                },
-                            )
-                        },
-                    )
-                    state.newMessagesStream.on(
-                        "error",
-                        (err: grpc.ServiceError) => {
-                            if (err.code === 1) {
+                                }
+                                break
+
+                            default:
+                                console.log("skipping unknown event")
                                 return
-                            }
-                            throw err
-                        },
-                    )
-                    state.newMessagesStream.on("end", () =>
+                        }
+                    })
+                    state.eventStream.on("error", (err: grpc.ServiceError) => {
+                        if (err.code === 1) {
+                            return
+                        }
+                        throw err
+                    })
+                    state.eventStream.on("end", () =>
                         console.log("stream ended"),
                     )
 
