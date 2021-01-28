@@ -1,5 +1,7 @@
 # libp2p Chat
 
+<a href="https://pkg.go.dev/github.com/FelipeRosa/go-libp2p-chat/go-node"><img src="https://pkg.go.dev/badge/github.com/FelipeRosa/go-libp2p-chat/go-node.svg" alt="Go Reference"></a>
+
 Peer-to-peer chat app built using libp2p as a learning project.
 
 <img
