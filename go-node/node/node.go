@@ -88,7 +88,7 @@ func (n *node) ID() string {
 }
 
 func (n *node) Start(ctx context.Context, port uint16) error {
-	n.logger.Info("starting node node", zap.Bool("bootstrapOnly", n.bootstrapOnly))
+	n.logger.Info("starting node", zap.Bool("bootstrapOnly", n.bootstrapOnly))
 
 	nodeAddrStrings := []string{fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", port)}
 
@@ -125,7 +125,7 @@ func (n *node) Start(ctx context.Context, port uint16) error {
 		fullAddrs = append(fullAddrs, addr.Encapsulate(p2pAddr).String())
 	}
 
-	n.logger.Info("started node node", zap.Strings("p2pAddresses", fullAddrs))
+	n.logger.Info("started node", zap.Strings("p2pAddresses", fullAddrs))
 	return nil
 }
 
@@ -330,7 +330,7 @@ func (n *node) SetNickname(ctx context.Context, nickname string) error {
 }
 
 func (n *node) GetNickname(ctx context.Context, peerID string) (string, error) {
-	nickname, err := n.kadDHT.GetValue(ctx, fmt.Sprintf("node/%s_nickname", peerID))
+	nickname, err := n.kadDHT.GetValue(ctx, fmt.Sprintf("%s/%s_nickname", DiscoveryNamespace, peerID))
 	if err != nil {
 		return "", errors.Wrap(err, "getting peer nickname from DHT")
 	}
@@ -392,7 +392,7 @@ func (n *node) publishNewMessageToSubscribers(msg entities.Message) {
 
 func (n *node) storeNickname(ctx context.Context, nickname string) error {
 	n.logger.Debug("storing nickname in DHT")
-	err := n.kadDHT.PutValue(ctx, fmt.Sprintf("node/%s_nickname", n.ID()), []byte(nickname))
+	err := n.kadDHT.PutValue(ctx, fmt.Sprintf("%s/%s_nickname", DiscoveryNamespace, n.ID()), []byte(nickname))
 	if err != nil {
 		return errors.Wrap(err, "storing nickname in DHT")
 	}
