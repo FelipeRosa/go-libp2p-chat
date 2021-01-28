@@ -186,7 +186,7 @@ func (n *node) Bootstrap(ctx context.Context, nodeAddrs []multiaddr.Multiaddr) e
 			}
 
 			// read all channel messages to avoid blocking the find peer query
-			for _ = range peersChan {
+			for range peersChan {
 			}
 
 			n.logger.Info("done looking for peers",
