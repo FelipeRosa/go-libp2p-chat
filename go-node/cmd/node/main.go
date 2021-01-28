@@ -10,9 +10,9 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/FelipeRosa/go-libp2p-chat/go-node/api"
-	apigen "github.com/FelipeRosa/go-libp2p-chat/go-node/gen/api"
-	"github.com/FelipeRosa/go-libp2p-chat/go-node/node"
+	"github.com/FelipeRosa/go-libp2p-chat/go-node/pkg/api"
+	apigen "github.com/FelipeRosa/go-libp2p-chat/go-node/pkg/gen/api"
+	"github.com/FelipeRosa/go-libp2p-chat/go-node/pkg/node"
 
 	"github.com/multiformats/go-multiaddr"
 	"github.com/pkg/errors"

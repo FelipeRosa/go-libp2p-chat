@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/FelipeRosa/go-libp2p-chat/go-node/entities"
-	"github.com/FelipeRosa/go-libp2p-chat/go-node/events"
+	"github.com/FelipeRosa/go-libp2p-chat/go-node/pkg/entities"
+	"github.com/FelipeRosa/go-libp2p-chat/go-node/pkg/events"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-core/crypto"
 	discovery2 "github.com/libp2p/go-libp2p-core/discovery"

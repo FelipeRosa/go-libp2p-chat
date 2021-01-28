@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"os"
 
-	apigen "github.com/FelipeRosa/go-libp2p-chat/go-node/gen/api"
+	apigen "github.com/FelipeRosa/go-libp2p-chat/go-node/pkg/gen/api"
 	"google.golang.org/grpc"
 )
 
