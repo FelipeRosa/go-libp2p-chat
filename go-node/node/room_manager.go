@@ -13,17 +13,23 @@ import (
 	"go.uber.org/zap"
 )
 
+// RoomMessageType enumerates the possible types of pubsub room messages.
 type RoomMessageType string
 
 const (
+	// RoomMessageTypeChatMessage is published when a new chat message is sent from the node.
 	RoomMessageTypeChatMessage RoomMessageType = "chat.message"
 )
 
+// RoomMessageOut holds data to be published in a topic.
 type RoomMessageOut struct {
 	Type    RoomMessageType `json:"type"`
 	Payload interface{}     `json:"payload"`
 }
 
+// RoomMessageIn holds data to be received from a topic.
+//
+// The Payload field is lazily unmarshalled because it depends on the type of message published.
 type RoomMessageIn struct {
 	Type    RoomMessageType `json:"type"`
 	Payload json.RawMessage `json:"payload"`
