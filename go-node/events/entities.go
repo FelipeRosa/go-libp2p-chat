@@ -63,12 +63,18 @@ func (e *PeerLeft) MarshalToProtobuf() *apigen.Event {
 
 // SetNickname occurs when a peer sets its nickname
 type SetNickname struct {
+	RoomName string
+	PeerID   peer.ID
 	Nickname string
 }
 
 func (e *SetNickname) MarshalToProtobuf() *apigen.Event {
 	return &apigen.Event{
-		Type:        apigen.Event_SET_NICKNAME,
-		SetNickname: &apigen.EvtSetNickname{Nickname: e.Nickname},
+		Type: apigen.Event_SET_NICKNAME,
+		SetNickname: &apigen.EvtSetNickname{
+			RoomName: e.RoomName,
+			PeerId:   e.PeerID.Pretty(),
+			Nickname: e.Nickname,
+		},
 	}
 }

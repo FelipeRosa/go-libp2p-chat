@@ -289,8 +289,8 @@ func (r *RoomManager) roomSubscriptionHandler(room *Room) {
 			}
 
 		case RoomMessageTypeNickname:
-			var nickname string
-			if err := json.Unmarshal(rm.Payload, &nickname); err != nil {
+			var nicknameEvt events.SetNickname
+			if err := json.Unmarshal(rm.Payload, &nicknameEvt); err != nil {
 				r.logger.Warn("ignoring message", zap.Error(errors.Wrap(
 					err,
 					"unmarshalling payload",
@@ -298,7 +298,7 @@ func (r *RoomManager) roomSubscriptionHandler(room *Room) {
 				continue
 			}
 
-			if err := r.eventPublisher.Publish(&events.SetNickname{Nickname: nickname}); err != nil {
+			if err := r.eventPublisher.Publish(&nicknameEvt); err != nil {
 				r.logger.Error("failed publishing room manager event", zap.Error(err))
 			}
 
@@ -357,8 +357,12 @@ func (r *RoomManager) setNicknameHandler() {
 		}
 
 		rm := &RoomMessageOut{
-			Type:    RoomMessageTypeNickname,
-			Payload: req.nickname,
+			Type: RoomMessageTypeNickname,
+			Payload: events.SetNickname{
+				RoomName: req.roomName,
+				PeerID:   r.node.ID(),
+				Nickname: req.nickname,
+			},
 		}
 		if err := r.publishRoomMessage(ctx, req.room, rm); err != nil {
 			r.logger.Error("failed to publishing room manager event", zap.Error(err))
