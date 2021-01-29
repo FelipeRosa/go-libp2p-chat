@@ -48,8 +48,7 @@ func (s *Server) GetNodeID(context.Context, *apigen.GetNodeIDRequest) (*apigen.G
 func (s *Server) SetNickname(_ context.Context, request *apigen.SetNicknameRequest) (*apigen.SetNicknameResponse, error) {
 	s.logger.Info("handling SetNickname")
 
-	// let it run forever passing context.Background()
-	if err := s.node.SetNickname(context.Background(), request.Nickname); err != nil {
+	if err := s.node.SetNickname(request.RoomName, request.Nickname); err != nil {
 		s.logger.Error("failed setting nickname", zap.Error(err))
 		return nil, err
 	}
@@ -63,7 +62,7 @@ func (s *Server) GetNickname(
 ) (*apigen.GetNicknameResponse, error) {
 	s.logger.Info("handling GetNickname")
 
-	nickname, err := s.node.GetNickname(ctx, request.PeerId)
+	nickname, err := s.node.GetNickname(ctx, request.RoomName, request.PeerId)
 	if err != nil {
 		s.logger.Error("failed getting peer nickname", zap.Error(err))
 		return nil, err

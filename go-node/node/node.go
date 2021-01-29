@@ -36,8 +36,8 @@ type Node interface {
 
 	JoinRoom(roomName string) error
 
-	SetNickname(ctx context.Context, nickname string) error
-	GetNickname(ctx context.Context, peerID string) (string, error)
+	SetNickname(roomName string, nickname string) error
+	GetNickname(ctx context.Context, roomName string, peerID string) (string, error)
 
 	SubscribeToEvents() (events.Subscriber, error)
 
@@ -111,10 +111,6 @@ func (n *node) Start(ctx context.Context, port uint16) error {
 	}
 	n.ps = ps
 
-	roomManager, roomManagerEvtSub := NewRoomManager(n.logger, n, n.ps)
-	n.roomManager = roomManager
-	go n.joinRoomManagerEvents(roomManagerEvtSub)
-
 	p2pAddr, err := multiaddr.NewMultiaddr(fmt.Sprintf("/p2p/%s", host.ID().Pretty()))
 	if err != nil {
 		return errors.Wrap(err, "creating host p2p multiaddr")
@@ -159,6 +155,13 @@ func (n *node) Bootstrap(ctx context.Context, nodeAddrs []multiaddr.Multiaddr) e
 		return errors.Wrap(err, "bootstrapping DHT")
 	}
 
+	// Setup room manager
+	roomManager, roomManagerEvtSub := NewRoomManager(n.logger, n, n.kadDHT, n.ps)
+	n.roomManager = roomManager
+	go n.joinRoomManagerEvents(roomManagerEvtSub)
+
+	// We can return at this point, since we have no other nodes to advertise too.
+	// Is this right?
 	if len(nodeAddrs) == 0 {
 		return nil
 	}
@@ -234,66 +237,23 @@ func (n *node) JoinRoom(roomName string) error {
 	return nil
 }
 
-func (n *node) SetNickname(ctx context.Context, nickname string) error {
+func (n *node) SetNickname(roomName string, nickname string) error {
 	if n.bootstrapOnly {
 		return errors.New("can't set nickname on a bootstrap-only node")
 	}
 
-	// TODO: should publish the nickname change to the rooms we are connected to
-	// (https://github.com/FelipeRosa/go-libp2p-chat/issues/14)
-	if len(n.kadDHT.RoutingTable().ListPeers()) == 0 {
-		n.logger.Debug("postponing storing nickname in DHT: no peers connected")
-
-		n.nicknameStoreMutex.Lock()
-		defer n.nicknameStoreMutex.Unlock()
-		if n.nicknameStoreWaiting {
-			return nil
-		}
-
-		go func() {
-			tick := time.Tick(time.Second)
-
-		retryLoop:
-			for {
-				select {
-				case <-tick:
-					if len(n.kadDHT.RoutingTable().ListPeers()) == 0 {
-						n.logger.Debug("postponing storing nickname in DHT: no peers connected")
-						continue
-					}
-
-					// TODO: return error channel?
-					if err := n.storeNickname(ctx, nickname); err != nil {
-						n.logger.Error("failed storing nickname in DHT", zap.Error(err))
-					}
-					break retryLoop
-
-				case <-ctx.Done():
-					n.logger.Debug("stopping nickname store thread: context done")
-					break retryLoop
-				}
-			}
-
-			n.nicknameStoreMutex.Lock()
-			defer n.nicknameStoreMutex.Unlock()
-			n.nicknameStoreWaiting = false
-		}()
-
-		return nil
-	}
-
-	if err := n.storeNickname(ctx, nickname); err != nil {
+	if err := n.roomManager.SetNickname(roomName, nickname); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (n *node) GetNickname(ctx context.Context, peerID string) (string, error) {
-	nickname, err := n.kadDHT.GetValue(ctx, fmt.Sprintf("%s/%s_nickname", DiscoveryNamespace, peerID))
-	if err != nil {
-		return "", errors.Wrap(err, "getting peer nickname from DHT")
-	}
-	return string(nickname), nil
+func (n *node) GetNickname(
+	ctx context.Context,
+	roomName string,
+	peerID string,
+) (string, error) {
+	return n.roomManager.GetNickname(ctx, roomName, peerID)
 }
 
 func (n *node) SubscribeToEvents() (events.Subscriber, error) {
@@ -323,16 +283,6 @@ func (n *node) publishEvent(evt events.Event) {
 			n.logger.Error("failed publishing node event", zap.Error(err))
 		}
 	}
-}
-
-func (n *node) storeNickname(ctx context.Context, nickname string) error {
-	n.logger.Debug("storing nickname in DHT")
-	err := n.kadDHT.PutValue(ctx, fmt.Sprintf("%s/%s_nickname", DiscoveryNamespace, n.ID()), []byte(nickname))
-	if err != nil {
-		return errors.Wrap(err, "storing nickname in DHT")
-	}
-
-	return nil
 }
 
 func (n *node) getPrivateKey() (crypto.PrivKey, error) {
