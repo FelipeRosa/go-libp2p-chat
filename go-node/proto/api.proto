@@ -40,12 +40,14 @@ message GetNodeIDResponse {
 }
 
 message SetNicknameRequest {
-  string nickname = 1;
+  string room_name = 1;
+  string nickname = 2;
 }
 message SetNicknameResponse {}
 
 message GetNicknameRequest {
-  string peer_id = 1;
+  string room_name = 1;
+  string peer_id = 2;
 }
 message GetNicknameResponse {
   string nickname = 1;
@@ -65,6 +67,9 @@ message EvtPeerLeft {
   string room_name = 1;
   string peer_id = 2;
 }
+message EvtSetNickname {
+  string nickname = 1;
+}
 
 message Event {
   enum Type {
@@ -72,6 +77,7 @@ message Event {
     NEW_CHAT_MESSAGE = 1;
     PEER_JOINED = 2;
     PEER_LEFT = 3;
+    SET_NICKNAME = 4;
   }
 
   Type type = 1;
@@ -79,4 +85,5 @@ message Event {
   EvtNewChatMessage new_chat_message = 2;
   EvtPeerJoined peer_joined = 3;
   EvtPeerLeft peer_left = 4;
+  EvtSetNickname set_nickname = 5;
 }

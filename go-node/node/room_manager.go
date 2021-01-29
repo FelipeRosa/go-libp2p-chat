@@ -5,20 +5,31 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/FelipeRosa/go-libp2p-chat/go-node/entities"
 	"github.com/FelipeRosa/go-libp2p-chat/go-node/events"
+	dht "github.com/libp2p/go-libp2p-kad-dht"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
+
+type setNicknameReq struct {
+	room     *Room
+	roomName string
+	nickname string
+}
 
 // RoomMessageType enumerates the possible types of pubsub room messages.
 type RoomMessageType string
 
 const (
 	// RoomMessageTypeChatMessage is published when a new chat message is sent from the node.
-	RoomMessageTypeChatMessage RoomMessageType = "chat.message"
+	RoomMessageTypeChatMessage RoomMessageType = "room.message"
+
+	// RoomMessageTypeNickname is published when a node set its nickname in a room.
+	RoomMessageTypeNickname RoomMessageType = "room.nickname"
 )
 
 // RoomMessageOut holds data to be published in a topic.
@@ -46,29 +57,37 @@ type RoomManager struct {
 	logger *zap.Logger
 	ps     *pubsub.PubSub
 	node   Node
+	kadDHT *dht.IpfsDHT
 
 	rooms map[string]*Room
 
 	eventPublisher events.Publisher
 
 	lock sync.RWMutex
+
+	nicknameCh chan setNicknameReq
 }
 
 // NewRoomManager creates a new room manager.
-func NewRoomManager(logger *zap.Logger, node Node, ps *pubsub.PubSub) (*RoomManager, events.Subscriber) {
+func NewRoomManager(logger *zap.Logger, node Node, kadDHT *dht.IpfsDHT, ps *pubsub.PubSub) (*RoomManager, events.Subscriber) {
 	if logger == nil {
 		logger = zap.NewNop()
 	}
 
 	evtPub, evtSub := events.NewSubscription()
 
-	return &RoomManager{
+	mngr := &RoomManager{
 		logger:         logger,
 		ps:             ps,
 		node:           node,
+		kadDHT:         kadDHT,
 		rooms:          make(map[string]*Room),
 		eventPublisher: evtPub,
-	}, evtSub
+		nicknameCh:     make(chan setNicknameReq),
+	}
+	go mngr.setNicknameHandler()
+
+	return mngr, evtSub
 }
 
 // JoinAndSubscribe joins and subscribes to a room.
@@ -140,20 +159,47 @@ func (r *RoomManager) SendChatMessage(ctx context.Context, roomName string, msg 
 		return errors.New(fmt.Sprintf("must join room before sending messages"))
 	}
 
-	rm := RoomMessageOut{
+	rm := &RoomMessageOut{
 		Type:    RoomMessageTypeChatMessage,
 		Payload: msg,
 	}
 
-	rmJSON, err := json.Marshal(rm)
-	if err != nil {
-		return errors.Wrap(err, "marshalling message")
-	}
-
-	if err := room.topic.Publish(ctx, rmJSON); err != nil {
+	if err := r.publishRoomMessage(ctx, room, rm); err != nil {
 		return err
 	}
+
 	return nil
+}
+
+// SetNickname sets the node's nickname in a given room.
+func (r *RoomManager) SetNickname(roomName string, nickname string) error {
+	room, found := r.getRoom(roomName)
+	if !found {
+		return errors.New("must join a room before setting nickname")
+	}
+
+	r.nicknameCh <- setNicknameReq{
+		room:     room,
+		roomName: roomName,
+		nickname: nickname,
+	}
+	return nil
+}
+
+// GetNickname tries to find the nickname of a peer in the DHT.
+func (r *RoomManager) GetNickname(
+	ctx context.Context,
+	roomName string,
+	peerID string,
+) (string, error) {
+	nickname, err := r.kadDHT.GetValue(
+		ctx,
+		fmt.Sprintf("%s/%s/nickname/%s", DiscoveryNamespace, roomName, peerID),
+	)
+	if err != nil {
+		return "", errors.Wrap(err, "getting peer nickname from DHT")
+	}
+	return string(nickname), nil
 }
 
 func (r *RoomManager) putRoom(room *Room) {
@@ -242,11 +288,80 @@ func (r *RoomManager) roomSubscriptionHandler(room *Room) {
 				r.logger.Error("failed publishing room manager event", zap.Error(err))
 			}
 
+		case RoomMessageTypeNickname:
+			var nickname string
+			if err := json.Unmarshal(rm.Payload, &nickname); err != nil {
+				r.logger.Warn("ignoring message", zap.Error(errors.Wrap(
+					err,
+					"unmarshalling payload",
+				)))
+				continue
+			}
+
+			if err := r.eventPublisher.Publish(&events.SetNickname{Nickname: nickname}); err != nil {
+				r.logger.Error("failed publishing room manager event", zap.Error(err))
+			}
+
 		default:
 			r.logger.Warn(
 				"ignoring room message",
 				zap.Error(errors.New("unknown room message type")),
 			)
+		}
+	}
+}
+
+func (r *RoomManager) publishRoomMessage(
+	ctx context.Context,
+	room *Room,
+	rm *RoomMessageOut,
+) error {
+	rmJSON, err := json.Marshal(rm)
+	if err != nil {
+		return errors.Wrap(err, "marshalling message")
+	}
+
+	if err := room.topic.Publish(ctx, rmJSON); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *RoomManager) setNicknameHandler() {
+	ctx := context.Background()
+
+	for {
+		req := <-r.nicknameCh
+
+		for {
+			// Wait until we have some peers
+			if r.kadDHT.RoutingTable().Size() == 0 {
+				r.logger.Debug("waiting for peers to store nickname")
+				<-time.After(time.Second)
+				continue
+			}
+
+			break
+		}
+
+		r.logger.Debug("storing nickname in DHT")
+		err := r.kadDHT.PutValue(
+			ctx,
+			fmt.Sprintf("%s/%s/nickname/%s", DiscoveryNamespace, req.roomName, r.node.ID().Pretty()),
+			[]byte(req.nickname),
+		)
+		if err != nil {
+			r.logger.Error("failed storing nickname in DHT", zap.Error(err))
+			continue
+		}
+
+		rm := &RoomMessageOut{
+			Type:    RoomMessageTypeNickname,
+			Payload: req.nickname,
+		}
+		if err := r.publishRoomMessage(ctx, req.room, rm); err != nil {
+			r.logger.Error("failed to publishing room manager event", zap.Error(err))
 		}
 	}
 }
