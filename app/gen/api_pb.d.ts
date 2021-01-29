@@ -314,6 +314,12 @@ export namespace EvtPeerLeft {
 }
 
 export class EvtSetNickname extends jspb.Message {
+  getRoomName(): string;
+  setRoomName(value: string): void;
+
+  getPeerId(): string;
+  setPeerId(value: string): void;
+
   getNickname(): string;
   setNickname(value: string): void;
 
@@ -329,6 +335,8 @@ export class EvtSetNickname extends jspb.Message {
 
 export namespace EvtSetNickname {
   export type AsObject = {
+    roomName: string,
+    peerId: string,
     nickname: string,
   }
 }

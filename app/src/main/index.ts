@@ -255,33 +255,61 @@ app.whenReady().then(() => {
                                 break
 
                             case ApiEvent.Type.PEER_JOINED:
-                                console.log("handling PEER_JOINED event")
+                                {
+                                    console.log("handling PEER_JOINED event")
 
-                                const joinInfo = evt.getPeerJoined()
-                                if (!joinInfo) {
-                                    console.error("missing join information")
+                                    const joinInfo = evt.getPeerJoined()
+                                    if (!joinInfo) {
+                                        console.error(
+                                            "missing join information",
+                                        )
+                                    }
+
+                                    window.webContents.send(
+                                        "room.peer-joined",
+                                        joinInfo?.getRoomName(),
+                                        joinInfo?.getPeerId(),
+                                    )
                                 }
-
-                                window.webContents.send(
-                                    "room.peer-joined",
-                                    joinInfo?.getRoomName(),
-                                    joinInfo?.getPeerId(),
-                                )
                                 break
 
                             case ApiEvent.Type.PEER_LEFT:
-                                console.log("handling PEER_LEFT event")
+                                {
+                                    console.log("handling PEER_LEFT event")
 
-                                const leftInfo = evt.getPeerLeft()
-                                if (!leftInfo) {
-                                    console.error("missing left information")
+                                    const leftInfo = evt.getPeerLeft()
+                                    if (!leftInfo) {
+                                        console.error(
+                                            "missing left information",
+                                        )
+                                    }
+
+                                    window.webContents.send(
+                                        "room.peer-left",
+                                        leftInfo?.getRoomName(),
+                                        leftInfo?.getPeerId(),
+                                    )
                                 }
+                                break
 
-                                window.webContents.send(
-                                    "room.peer-left",
-                                    leftInfo?.getRoomName(),
-                                    leftInfo?.getPeerId(),
-                                )
+                            case ApiEvent.Type.SET_NICKNAME:
+                                {
+                                    console.log("handling SET_NICKNAME event")
+
+                                    const nicknameInfo = evt.getSetNickname()
+                                    if (!nicknameInfo) {
+                                        console.error(
+                                            "missing nickname information",
+                                        )
+                                    }
+
+                                    window.webContents.send(
+                                        "room.peer-set-nickname",
+                                        nicknameInfo?.getRoomName(),
+                                        nicknameInfo?.getPeerId(),
+                                        nicknameInfo?.getNickname(),
+                                    )
+                                }
                                 break
 
                             default:

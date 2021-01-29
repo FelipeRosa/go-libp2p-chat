@@ -7,8 +7,6 @@
  * @public
  */
 // GENERATED CODE -- DO NOT EDIT!
-/* eslint-disable */
-// @ts-nocheck
 
 var jspb = require('google-protobuf');
 var goog = jspb;
@@ -2457,7 +2455,9 @@ proto.api.EvtSetNickname.prototype.toObject = function(opt_includeInstance) {
  */
 proto.api.EvtSetNickname.toObject = function(includeInstance, msg) {
   var f, obj = {
-    nickname: jspb.Message.getFieldWithDefault(msg, 1, "")
+    roomName: jspb.Message.getFieldWithDefault(msg, 1, ""),
+    peerId: jspb.Message.getFieldWithDefault(msg, 2, ""),
+    nickname: jspb.Message.getFieldWithDefault(msg, 3, "")
   };
 
   if (includeInstance) {
@@ -2496,6 +2496,14 @@ proto.api.EvtSetNickname.deserializeBinaryFromReader = function(msg, reader) {
     switch (field) {
     case 1:
       var value = /** @type {string} */ (reader.readString());
+      msg.setRoomName(value);
+      break;
+    case 2:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setPeerId(value);
+      break;
+    case 3:
+      var value = /** @type {string} */ (reader.readString());
       msg.setNickname(value);
       break;
     default:
@@ -2527,10 +2535,24 @@ proto.api.EvtSetNickname.prototype.serializeBinary = function() {
  */
 proto.api.EvtSetNickname.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getNickname();
+  f = message.getRoomName();
   if (f.length > 0) {
     writer.writeString(
       1,
+      f
+    );
+  }
+  f = message.getPeerId();
+  if (f.length > 0) {
+    writer.writeString(
+      2,
+      f
+    );
+  }
+  f = message.getNickname();
+  if (f.length > 0) {
+    writer.writeString(
+      3,
       f
     );
   }
@@ -2538,10 +2560,10 @@ proto.api.EvtSetNickname.serializeBinaryToWriter = function(message, writer) {
 
 
 /**
- * optional string nickname = 1;
+ * optional string room_name = 1;
  * @return {string}
  */
-proto.api.EvtSetNickname.prototype.getNickname = function() {
+proto.api.EvtSetNickname.prototype.getRoomName = function() {
   return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 1, ""));
 };
 
@@ -2550,8 +2572,44 @@ proto.api.EvtSetNickname.prototype.getNickname = function() {
  * @param {string} value
  * @return {!proto.api.EvtSetNickname} returns this
  */
-proto.api.EvtSetNickname.prototype.setNickname = function(value) {
+proto.api.EvtSetNickname.prototype.setRoomName = function(value) {
   return jspb.Message.setProto3StringField(this, 1, value);
+};
+
+
+/**
+ * optional string peer_id = 2;
+ * @return {string}
+ */
+proto.api.EvtSetNickname.prototype.getPeerId = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 2, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.api.EvtSetNickname} returns this
+ */
+proto.api.EvtSetNickname.prototype.setPeerId = function(value) {
+  return jspb.Message.setProto3StringField(this, 2, value);
+};
+
+
+/**
+ * optional string nickname = 3;
+ * @return {string}
+ */
+proto.api.EvtSetNickname.prototype.getNickname = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 3, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.api.EvtSetNickname} returns this
+ */
+proto.api.EvtSetNickname.prototype.setNickname = function(value) {
+  return jspb.Message.setProto3StringField(this, 3, value);
 };
 
 
