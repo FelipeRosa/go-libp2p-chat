@@ -228,6 +228,7 @@ app.whenReady().then(() => {
 
                                     // need to get the sender nickname
                                     const getNicknameReq = new GetNicknameRequest()
+                                    getNicknameReq.setRoomName("global")
                                     getNicknameReq.setPeerId(senderId)
                                     state.apiClient?.getNickname(
                                         getNicknameReq,
@@ -299,6 +300,7 @@ app.whenReady().then(() => {
                     )
 
                     const setNicknameReq = new SetNicknameRequest()
+                    setNicknameReq.setRoomName("global")
                     setNicknameReq.setNickname(nickname)
                     const setNickname = new Promise<void>((resolve, reject) => {
                         if (state.apiClient === null) {

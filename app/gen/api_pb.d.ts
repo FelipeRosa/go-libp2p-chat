@@ -144,6 +144,9 @@ export namespace GetNodeIDResponse {
 }
 
 export class SetNicknameRequest extends jspb.Message {
+  getRoomName(): string;
+  setRoomName(value: string): void;
+
   getNickname(): string;
   setNickname(value: string): void;
 
@@ -159,6 +162,7 @@ export class SetNicknameRequest extends jspb.Message {
 
 export namespace SetNicknameRequest {
   export type AsObject = {
+    roomName: string,
     nickname: string,
   }
 }
@@ -180,6 +184,9 @@ export namespace SetNicknameResponse {
 }
 
 export class GetNicknameRequest extends jspb.Message {
+  getRoomName(): string;
+  setRoomName(value: string): void;
+
   getPeerId(): string;
   setPeerId(value: string): void;
 
@@ -195,6 +202,7 @@ export class GetNicknameRequest extends jspb.Message {
 
 export namespace GetNicknameRequest {
   export type AsObject = {
+    roomName: string,
     peerId: string,
   }
 }
@@ -305,6 +313,26 @@ export namespace EvtPeerLeft {
   }
 }
 
+export class EvtSetNickname extends jspb.Message {
+  getNickname(): string;
+  setNickname(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): EvtSetNickname.AsObject;
+  static toObject(includeInstance: boolean, msg: EvtSetNickname): EvtSetNickname.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: EvtSetNickname, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): EvtSetNickname;
+  static deserializeBinaryFromReader(message: EvtSetNickname, reader: jspb.BinaryReader): EvtSetNickname;
+}
+
+export namespace EvtSetNickname {
+  export type AsObject = {
+    nickname: string,
+  }
+}
+
 export class Event extends jspb.Message {
   getType(): Event.TypeMap[keyof Event.TypeMap];
   setType(value: Event.TypeMap[keyof Event.TypeMap]): void;
@@ -324,6 +352,11 @@ export class Event extends jspb.Message {
   getPeerLeft(): EvtPeerLeft | undefined;
   setPeerLeft(value?: EvtPeerLeft): void;
 
+  hasSetNickname(): boolean;
+  clearSetNickname(): void;
+  getSetNickname(): EvtSetNickname | undefined;
+  setSetNickname(value?: EvtSetNickname): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): Event.AsObject;
   static toObject(includeInstance: boolean, msg: Event): Event.AsObject;
@@ -340,6 +373,7 @@ export namespace Event {
     newChatMessage?: EvtNewChatMessage.AsObject,
     peerJoined?: EvtPeerJoined.AsObject,
     peerLeft?: EvtPeerLeft.AsObject,
+    setNickname?: EvtSetNickname.AsObject,
   }
 
   export interface TypeMap {
@@ -347,6 +381,7 @@ export namespace Event {
     NEW_CHAT_MESSAGE: 1;
     PEER_JOINED: 2;
     PEER_LEFT: 3;
+    SET_NICKNAME: 4;
   }
 
   export const Type: TypeMap;
