@@ -5,7 +5,7 @@ import (
 
 	apigen "github.com/FelipeRosa/go-libp2p-chat/go-node/gen/api"
 	"github.com/FelipeRosa/go-libp2p-chat/go-node/node"
-
+	"github.com/libp2p/go-libp2p-core/peer"
 	"go.uber.org/zap"
 )
 
@@ -62,7 +62,13 @@ func (s *Server) GetNickname(
 ) (*apigen.GetNicknameResponse, error) {
 	s.logger.Info("handling GetNickname")
 
-	nickname, err := s.node.GetNickname(ctx, request.RoomName, request.PeerId)
+	peerID, err := peer.Decode(request.PeerId)
+	if err != nil {
+		s.logger.Error("failed parsing peer id", zap.Error(err))
+		return nil, err
+	}
+
+	nickname, err := s.node.GetNickname(ctx, request.RoomName, peerID)
 	if err != nil {
 		s.logger.Error("failed getting peer nickname", zap.Error(err))
 		return nil, err

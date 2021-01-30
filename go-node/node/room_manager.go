@@ -9,6 +9,7 @@ import (
 
 	"github.com/FelipeRosa/go-libp2p-chat/go-node/entities"
 	"github.com/FelipeRosa/go-libp2p-chat/go-node/events"
+	"github.com/libp2p/go-libp2p-core/peer"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/pkg/errors"
@@ -190,12 +191,9 @@ func (r *RoomManager) SetNickname(roomName string, nickname string) error {
 func (r *RoomManager) GetNickname(
 	ctx context.Context,
 	roomName string,
-	peerID string,
+	peerID peer.ID,
 ) (string, error) {
-	nickname, err := r.kadDHT.GetValue(
-		ctx,
-		fmt.Sprintf("%s/%s/nickname/%s", DiscoveryNamespace, roomName, peerID),
-	)
+	nickname, err := r.kadDHT.GetValue(ctx, r.nicknameDHTKey(roomName, peerID))
 	if err != nil {
 		return "", errors.Wrap(err, "getting peer nickname from DHT")
 	}
@@ -348,7 +346,7 @@ func (r *RoomManager) setNicknameHandler() {
 		r.logger.Debug("storing nickname in DHT")
 		err := r.kadDHT.PutValue(
 			ctx,
-			fmt.Sprintf("%s/%s/nickname/%s", DiscoveryNamespace, req.roomName, r.node.ID().Pretty()),
+			r.nicknameDHTKey(req.roomName, r.node.ID()),
 			[]byte(req.nickname),
 		)
 		if err != nil {
@@ -368,4 +366,8 @@ func (r *RoomManager) setNicknameHandler() {
 			r.logger.Error("failed to publishing room manager event", zap.Error(err))
 		}
 	}
+}
+
+func (r *RoomManager) nicknameDHTKey(roomName string, pid peer.ID) string {
+	return fmt.Sprintf("/%s/%s_nickname_%s", RoomInfoNamespace, roomName, pid.Pretty())
 }

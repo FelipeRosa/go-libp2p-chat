@@ -37,7 +37,7 @@ type Node interface {
 	JoinRoom(roomName string) error
 
 	SetNickname(roomName string, nickname string) error
-	GetNickname(ctx context.Context, roomName string, peerID string) (string, error)
+	GetNickname(ctx context.Context, roomName string, peerID peer.ID) (string, error)
 
 	SubscribeToEvents() (events.Subscriber, error)
 
@@ -141,9 +141,9 @@ func (n *node) Bootstrap(ctx context.Context, nodeAddrs []multiaddr.Multiaddr) e
 		ctx,
 		n.host,
 		dht.BootstrapPeers(bootstrappers...),
-		dht.ProtocolPrefix(ProtocolID),
+		dht.ProtocolPrefix("/"+DiscoveryNamespace),
 		dht.Mode(dht.ModeAutoServer),
-		dht.Validator(&validator{}),
+		dht.NamespacedValidator(RoomInfoNamespace, &roomDataValidator{}),
 	)
 	if err != nil {
 		return errors.Wrap(err, "creating routing DHT")
@@ -251,7 +251,7 @@ func (n *node) SetNickname(roomName string, nickname string) error {
 func (n *node) GetNickname(
 	ctx context.Context,
 	roomName string,
-	peerID string,
+	peerID peer.ID,
 ) (string, error) {
 	return n.roomManager.GetNickname(ctx, roomName, peerID)
 }
