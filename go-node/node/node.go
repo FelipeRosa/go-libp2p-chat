@@ -35,6 +35,7 @@ type Node interface {
 	SendMessage(ctx context.Context, roomName string, msg string) error
 
 	JoinRoom(roomName string) error
+	GetRoomParticipants(roomName string) ([]peer.ID, error)
 
 	SetNickname(roomName string, nickname string) error
 	GetNickname(ctx context.Context, roomName string, peerID peer.ID) (string, error)
@@ -235,6 +236,14 @@ func (n *node) JoinRoom(roomName string) error {
 		return err
 	}
 	return nil
+}
+
+func (n *node) GetRoomParticipants(roomName string) ([]peer.ID, error) {
+	if n.bootstrapOnly {
+		return nil, errors.New("can't get room participants on a bootstrap-only node")
+	}
+
+	return n.roomManager.GetRoomParticipants(roomName)
 }
 
 func (n *node) SetNickname(roomName string, nickname string) error {

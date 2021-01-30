@@ -77,6 +77,24 @@ func (s *Server) GetNickname(
 	return &apigen.GetNicknameResponse{Nickname: nickname}, nil
 }
 
+func (s *Server) GetRoomParticipants(
+	_ context.Context,
+	request *apigen.GetRoomParticipantsRequest,
+) (*apigen.GetRoomParticipantsResponse, error) {
+	peerIDs, err := s.node.GetRoomParticipants(request.RoomName)
+	if err != nil {
+		s.logger.Error("failed getting room participants", zap.Error(err))
+		return nil, err
+	}
+
+	var prettyPeerIDs []string
+	for _, peerID := range peerIDs {
+		prettyPeerIDs = append(prettyPeerIDs, peerID.Pretty())
+	}
+
+	return &apigen.GetRoomParticipantsResponse{PeerIds: prettyPeerIDs}, nil
+}
+
 func (s *Server) SubscribeToEvents(
 	_ *apigen.SubscribeToEventsRequest,
 	stream apigen.Api_SubscribeToEventsServer,
