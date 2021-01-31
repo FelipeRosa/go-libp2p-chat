@@ -129,7 +129,7 @@ export const Chat = () => {
                     </div>
 
                     {participants.map((p, i) => (
-                        <div key={i}>{p.nickname}</div>
+                        <div key={i} className={"chat-participant"}>{p.nickname.trim() || p.id}</div>
                     ))}
                 </div>
             </div>
