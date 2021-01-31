@@ -1,17 +1,18 @@
 import { ipcRenderer } from "electron"
-import React, { useContext, useEffect, useReducer, useState } from "react"
+import React, { useEffect, useReducer } from "react"
 import { render } from "react-dom"
 import { ChatMessage, LocalNodeInfo } from "../common/ipc"
+import { App } from "./components/App"
 import { AppStateContext } from "./context"
 import { ConnState } from "./entities"
 import "./index.css"
 import { reducer } from "./reducer"
 
-const App = () => {
+const Main = () => {
     const [state, dispatch] = useReducer(reducer, {
         connectionState: ConnState.Disconnected,
         localNodeInfo: null,
-        chat: { contents: [] },
+        chat: { contents: [], participants: [] },
     })
 
     useEffect(() => {
@@ -25,6 +26,10 @@ const App = () => {
 
         ipcRenderer.on("room.peer-left", (_e, roomName, id) => {
             dispatch({ type: "peer-left", roomName, id })
+        })
+
+        ipcRenderer.on("room.participants", (_e, roomName, participants) => {
+            dispatch({ type: "participants", roomName, participants })
         })
 
         ipcRenderer.on("chat.connecting", () => {
@@ -51,222 +56,18 @@ const App = () => {
             ipcRenderer.removeAllListeners("room.new-message")
             ipcRenderer.removeAllListeners("room.peer-joined")
             ipcRenderer.removeAllListeners("room.peer-left")
+            ipcRenderer.removeAllListeners("room.participants")
             ipcRenderer.removeAllListeners("chat.connecting")
             ipcRenderer.removeAllListeners("chat.connected")
             ipcRenderer.removeAllListeners("chat.disconnected")
         }
     }, [state])
 
-    const Connect = () => {
-        const nicknameInput = React.createRef<HTMLInputElement>()
-        const addrInput = React.createRef<HTMLTextAreaElement>()
-
-        return (
-            <form
-                className={"connect-form"}
-                onSubmit={(e) => e.preventDefault()}
-            >
-                <div className={"connect-nickname-label"}>Nickname*</div>
-                <input
-                    className={"connect-nickname-input"}
-                    type={"text"}
-                    ref={nicknameInput}
-                    autoFocus={true}
-                />
-
-                <div className={"connect-node-addrs-label"}>
-                    <span>Bootstrap nodes address</span>{" "}
-                    <span style={{ color: "rgba(248, 248, 242, 0.6)" }}>
-                        (if empty, starts a bootstrap node and does not connect
-                        to any networks)
-                    </span>
-                </div>
-                <textarea
-                    className={"connect-node-addrs-input"}
-                    placeholder={"Bootstrap node addresses..."}
-                    rows={4}
-                    ref={addrInput}
-                />
-                <input
-                    className={"connect-node-addrs-btn"}
-                    type={"submit"}
-                    value={"Connect"}
-                    onClick={() => {
-                        if (
-                            nicknameInput.current !== null &&
-                            nicknameInput.current.value.trim().length > 0 &&
-                            addrInput.current !== null
-                        ) {
-                            ipcRenderer.send(
-                                "chat.connect",
-                                nicknameInput.current.value.trim(),
-                                addrInput.current.value,
-                            )
-                        }
-                    }}
-                />
-            </form>
-        )
-    }
-
-    const Connecting = () => {
-        const [thumbLeft, setThumbLeft] = useState(0)
-
-        useEffect(() => {
-            const intervalId = setInterval(() => {
-                setThumbLeft(thumbLeft > 100 ? -200 : thumbLeft + 3)
-            }, 10)
-
-            return () => clearInterval(intervalId)
-        }, [thumbLeft])
-
-        return (
-            <div className={"connecting-screen"}>
-                <div className={"connecting-label"}>Connecting...</div>
-                <div className={"connecting-feedback-bar"}>
-                    <div
-                        className={"connecting-feedback-bar-thumb"}
-                        style={{ left: thumbLeft }}
-                    />
-                </div>
-            </div>
-        )
-    }
-
-    const Messages = () => {
-        const {
-            state: {
-                chat: { contents },
-            },
-            dispatch,
-        } = useContext(AppStateContext)
-
-        const inputBox = React.createRef<HTMLInputElement>()
-        const msgsDiv = React.createRef<HTMLDivElement>()
-
-        // always show the latest messages
-        useEffect(() => {
-            if (msgsDiv.current !== null) {
-                msgsDiv.current.scrollTop = msgsDiv.current.scrollHeight
-            }
-        }, [contents])
-
-        const formatTimestamp = (ts: number): string => {
-            const d = new Date(ts * 1000)
-            const h = d.getHours().toString().padStart(2, "0")
-            const m = d.getMinutes().toString().padStart(2, "0")
-
-            return `${h}:${m}`
-        }
-
-        const sendMsg = () => {
-            if (
-                state.localNodeInfo !== null &&
-                inputBox.current !== null &&
-                inputBox.current.value.trimEnd().length > 0
-            ) {
-                const msg = inputBox.current.value.trimEnd()
-                ipcRenderer.send(
-                    "chat.send",
-                    msg,
-                    state.localNodeInfo.currentRoomName,
-                )
-                inputBox.current.value = ""
-
-                dispatch({
-                    type: "new-message",
-                    message: {
-                        type: "chat-message",
-                        sender: {
-                            id: state.localNodeInfo.id,
-                            nickname: state.localNodeInfo.nickname,
-                        },
-                        timestamp: Number(new Date()) / 1000,
-                        value: msg,
-                    },
-                })
-            }
-        }
-
-        return (
-            <div className={"chat"}>
-                <div className={"room-info"}>
-                    {state.localNodeInfo && (
-                        <div>
-                            <div className={"room-name"}>
-                                Room:{" "}
-                                <b>{state.localNodeInfo.currentRoomName}</b>
-                            </div>
-                            <div className={"local-node-id"}>
-                                <b>Local Node Address</b>:{" "}
-                                {state.localNodeInfo.address}
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                <div className={"chat-contents"} ref={msgsDiv}>
-                    {contents.map((msg, index) =>
-                        msg.type === "chat-message" ? (
-                            <div key={index} className={"chat-message"}>
-                                <div className={"chat-message-timestamp"}>
-                                    {formatTimestamp(msg.timestamp)}
-                                </div>
-                                <div className={"chat-message-sender"}>
-                                    {msg.sender.nickname}
-                                </div>
-                                <div className={"chat-message-value"}>
-                                    {msg.value}
-                                </div>
-                            </div>
-                        ) : (
-                            <div key={index} className={"chat-notification"}>
-                                <div className={"chat-message-timestamp"}>
-                                    {formatTimestamp(msg.timestamp)}
-                                </div>
-                                <div className={"chat-message-value"}>
-                                    {msg.value}
-                                </div>
-                            </div>
-                        ),
-                    )}
-                </div>
-
-                <div className={"chat-send"}>
-                    <input
-                        className={"chat-send-input"}
-                        type={"text"}
-                        placeholder={"Write message..."}
-                        autoFocus={true}
-                        onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                                sendMsg()
-                            }
-                        }}
-                        ref={inputBox}
-                    />
-                    <input
-                        className={"chat-send-btn"}
-                        type={"button"}
-                        value={"Send"}
-                        onClick={sendMsg}
-                    />
-                </div>
-            </div>
-        )
-    }
-
     return (
         <AppStateContext.Provider value={{ state, dispatch }}>
-            {state.connectionState === ConnState.Connected ? (
-                <Messages />
-            ) : state.connectionState === ConnState.Connecting ? (
-                <Connecting />
-            ) : (
-                <Connect />
-            )}
+            <App />
         </AppStateContext.Provider>
     )
 }
 
-render(<App />, document.getElementById("root"))
+render(<Main />, document.getElementById("root"))

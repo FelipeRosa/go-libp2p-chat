@@ -1,5 +1,10 @@
 import { ChatMessage, LocalNodeInfo } from "../common/ipc"
-import { AppState, ConnState, NotificationMessage } from "./entities"
+import {
+    AppState,
+    ConnState,
+    NotificationMessage,
+    Participant,
+} from "./entities"
 
 export type Msg =
     | {
@@ -19,6 +24,11 @@ export type Msg =
           type: "peer-left"
           roomName: string
           id: string
+      }
+    | {
+          type: "participants"
+          roomName: string
+          participants: Array<Participant>
       }
     | { type: "connecting" }
     | {
@@ -59,6 +69,15 @@ export function reducer(prevState: AppState, msg: Msg): AppState {
                 timestamp: Number(new Date()),
                 value: `Peer left: ${msg.id}`,
             })
+
+        case "participants":
+            return {
+                ...prevState,
+                chat: {
+                    ...prevState.chat,
+                    participants: msg.participants,
+                },
+            }
 
         case "connecting":
             return {

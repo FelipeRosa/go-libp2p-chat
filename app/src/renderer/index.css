@@ -70,6 +70,31 @@ button, button[type="submit"], input[type="button"], input[type="submit"] {
     height: 100%;
 }
 
+.chat-body {
+    display: flex;
+    flex-flow: row nowrap;
+    height: 100%;
+}
+
+.chat-participants {
+    flex: 1;
+    border-left: 1px solid #44475a;
+    padding: 4px;
+}
+
+.chat-participants-title {
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 16px;
+}
+
+.chat-panel {
+    display: flex;
+    flex-flow: column nowrap;
+    flex: 4;
+    height: 100%;
+}
+
 .chat-contents {
     display: flex;
     flex: 1 1 80%;

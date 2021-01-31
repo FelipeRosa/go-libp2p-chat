@@ -12,6 +12,11 @@ export type NotificationMessage = {
     value: string
 }
 
+export type Participant = {
+    id: string
+    nickname: string
+}
+
 export type AppState = {
     connectionState: ConnState
     localNodeInfo: LocalNodeInfo | null
@@ -19,5 +24,6 @@ export type AppState = {
     // only 1 room for now
     chat: {
         contents: Array<ChatMessage | NotificationMessage>
+        participants: Array<Participant>
     }
 }

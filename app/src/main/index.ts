@@ -16,6 +16,7 @@ import {
     Event as ApiEvent,
     GetNicknameRequest,
     GetNodeIDRequest,
+    GetRoomParticipantsRequest,
     JoinRoomRequest,
     SendMessageRequest,
     SubscribeToEventsRequest,
@@ -26,16 +27,23 @@ class State {
     goNode: ChildProcessWithoutNullStreams | null
     apiClient: ApiClient | null
     eventStream: grpc.ClientReadableStream<ApiEvent> | null
+    getParticipantsInterval: NodeJS.Timeout | null
     connecting: boolean
 
     constructor() {
         this.goNode = null
         this.apiClient = null
         this.eventStream = null
+        this.getParticipantsInterval = null
         this.connecting = false
     }
 
     close() {
+        if (this.getParticipantsInterval !== null) {
+            clearInterval(this.getParticipantsInterval)
+            this.getParticipantsInterval = null
+        }
+
         this.eventStream?.cancel()
         this.eventStream = null
 
@@ -52,10 +60,10 @@ let state = new State()
 app.whenReady().then(() => {
     const window = new BrowserWindow({
         title: "libp2p chat",
-        width: 640,
-        height: 480,
-        minWidth: 320,
-        minHeight: 240,
+        width: 800,
+        height: 600,
+        minWidth: 400,
+        minHeight: 400,
         webPreferences: {
             nodeIntegration: true,
         },
@@ -323,6 +331,39 @@ app.whenReady().then(() => {
                         })
                     })
                     await joinRoom
+
+                    state.getParticipantsInterval = setInterval(() => {
+                        const req = new GetRoomParticipantsRequest()
+                        req.setRoomName("global")
+                        state.apiClient?.getRoomParticipants(
+                            req,
+                            (err, res) => {
+                                if (err !== null) {
+                                    console.error(
+                                        "failed getting room participants",
+                                        err,
+                                    )
+                                }
+
+                                const participants = res
+                                    ?.getParticipantsList()
+                                    .map((p) => p.toObject())
+                                    .sort((p1, p2) =>
+                                        p1.id < p2.id
+                                            ? -1
+                                            : p1.id === p2.id
+                                            ? 0
+                                            : 1,
+                                    )
+
+                                window.webContents.send(
+                                    "room.participants",
+                                    "global",
+                                    participants || [],
+                                )
+                            },
+                        )
+                    }, 50)
 
                     return nodeId
                 }
