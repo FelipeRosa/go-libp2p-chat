@@ -27,18 +27,6 @@ const App = () => {
             dispatch({ type: "peer-left", roomName, id })
         })
 
-        ipcRenderer.on(
-            "room.peer-set-nickname",
-            (_e, roomName, peerId, nickname) => {
-                dispatch({
-                    type: "peer-set-nickname",
-                    roomName,
-                    peerId,
-                    nickname,
-                })
-            },
-        )
-
         ipcRenderer.on("chat.connecting", () => {
             dispatch({ type: "connecting" })
         })
@@ -63,7 +51,6 @@ const App = () => {
             ipcRenderer.removeAllListeners("room.new-message")
             ipcRenderer.removeAllListeners("room.peer-joined")
             ipcRenderer.removeAllListeners("room.peer-left")
-            ipcRenderer.removeAllListeners("room.peer-set-nickname")
             ipcRenderer.removeAllListeners("chat.connecting")
             ipcRenderer.removeAllListeners("chat.connected")
             ipcRenderer.removeAllListeners("chat.disconnected")

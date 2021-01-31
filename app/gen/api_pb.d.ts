@@ -227,6 +227,112 @@ export namespace GetNicknameResponse {
   }
 }
 
+export class JoinRoomRequest extends jspb.Message {
+  getRoomName(): string;
+  setRoomName(value: string): void;
+
+  getNickname(): string;
+  setNickname(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): JoinRoomRequest.AsObject;
+  static toObject(includeInstance: boolean, msg: JoinRoomRequest): JoinRoomRequest.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: JoinRoomRequest, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): JoinRoomRequest;
+  static deserializeBinaryFromReader(message: JoinRoomRequest, reader: jspb.BinaryReader): JoinRoomRequest;
+}
+
+export namespace JoinRoomRequest {
+  export type AsObject = {
+    roomName: string,
+    nickname: string,
+  }
+}
+
+export class JoinRoomResponse extends jspb.Message {
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): JoinRoomResponse.AsObject;
+  static toObject(includeInstance: boolean, msg: JoinRoomResponse): JoinRoomResponse.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: JoinRoomResponse, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): JoinRoomResponse;
+  static deserializeBinaryFromReader(message: JoinRoomResponse, reader: jspb.BinaryReader): JoinRoomResponse;
+}
+
+export namespace JoinRoomResponse {
+  export type AsObject = {
+  }
+}
+
+export class RoomParticipant extends jspb.Message {
+  getId(): string;
+  setId(value: string): void;
+
+  getNickname(): string;
+  setNickname(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): RoomParticipant.AsObject;
+  static toObject(includeInstance: boolean, msg: RoomParticipant): RoomParticipant.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: RoomParticipant, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): RoomParticipant;
+  static deserializeBinaryFromReader(message: RoomParticipant, reader: jspb.BinaryReader): RoomParticipant;
+}
+
+export namespace RoomParticipant {
+  export type AsObject = {
+    id: string,
+    nickname: string,
+  }
+}
+
+export class GetRoomParticipantsRequest extends jspb.Message {
+  getRoomName(): string;
+  setRoomName(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): GetRoomParticipantsRequest.AsObject;
+  static toObject(includeInstance: boolean, msg: GetRoomParticipantsRequest): GetRoomParticipantsRequest.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: GetRoomParticipantsRequest, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): GetRoomParticipantsRequest;
+  static deserializeBinaryFromReader(message: GetRoomParticipantsRequest, reader: jspb.BinaryReader): GetRoomParticipantsRequest;
+}
+
+export namespace GetRoomParticipantsRequest {
+  export type AsObject = {
+    roomName: string,
+  }
+}
+
+export class GetRoomParticipantsResponse extends jspb.Message {
+  clearParticipantsList(): void;
+  getParticipantsList(): Array<RoomParticipant>;
+  setParticipantsList(value: Array<RoomParticipant>): void;
+  addParticipants(value?: RoomParticipant, index?: number): RoomParticipant;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): GetRoomParticipantsResponse.AsObject;
+  static toObject(includeInstance: boolean, msg: GetRoomParticipantsResponse): GetRoomParticipantsResponse.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: GetRoomParticipantsResponse, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): GetRoomParticipantsResponse;
+  static deserializeBinaryFromReader(message: GetRoomParticipantsResponse, reader: jspb.BinaryReader): GetRoomParticipantsResponse;
+}
+
+export namespace GetRoomParticipantsResponse {
+  export type AsObject = {
+    participantsList: Array<RoomParticipant.AsObject>,
+  }
+}
+
 export class SubscribeToEventsRequest extends jspb.Message {
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): SubscribeToEventsRequest.AsObject;
@@ -389,7 +495,6 @@ export namespace Event {
     NEW_CHAT_MESSAGE: 1;
     PEER_JOINED: 2;
     PEER_LEFT: 3;
-    SET_NICKNAME: 4;
   }
 
   export const Type: TypeMap;

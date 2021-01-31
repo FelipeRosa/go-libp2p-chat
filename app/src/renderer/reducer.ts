@@ -20,12 +20,6 @@ export type Msg =
           roomName: string
           id: string
       }
-    | {
-          type: "peer-set-nickname"
-          roomName: string
-          peerId: string
-          nickname: string
-      }
     | { type: "connecting" }
     | {
           type: "connected"
@@ -64,13 +58,6 @@ export function reducer(prevState: AppState, msg: Msg): AppState {
                 type: "notification",
                 timestamp: Number(new Date()),
                 value: `Peer left: ${msg.id}`,
-            })
-
-        case "peer-set-nickname":
-            return addContent(prevState, {
-                type: "notification",
-                timestamp: Number(new Date()),
-                value: `${msg.peerId} set its nickname to ${msg.nickname}`,
             })
 
         case "connecting":

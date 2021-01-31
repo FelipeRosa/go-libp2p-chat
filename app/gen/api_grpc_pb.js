@@ -59,6 +59,50 @@ function deserialize_api_GetNodeIDResponse(buffer_arg) {
   return api_pb.GetNodeIDResponse.deserializeBinary(new Uint8Array(buffer_arg));
 }
 
+function serialize_api_GetRoomParticipantsRequest(arg) {
+  if (!(arg instanceof api_pb.GetRoomParticipantsRequest)) {
+    throw new Error('Expected argument of type api.GetRoomParticipantsRequest');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_api_GetRoomParticipantsRequest(buffer_arg) {
+  return api_pb.GetRoomParticipantsRequest.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
+function serialize_api_GetRoomParticipantsResponse(arg) {
+  if (!(arg instanceof api_pb.GetRoomParticipantsResponse)) {
+    throw new Error('Expected argument of type api.GetRoomParticipantsResponse');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_api_GetRoomParticipantsResponse(buffer_arg) {
+  return api_pb.GetRoomParticipantsResponse.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
+function serialize_api_JoinRoomRequest(arg) {
+  if (!(arg instanceof api_pb.JoinRoomRequest)) {
+    throw new Error('Expected argument of type api.JoinRoomRequest');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_api_JoinRoomRequest(buffer_arg) {
+  return api_pb.JoinRoomRequest.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
+function serialize_api_JoinRoomResponse(arg) {
+  if (!(arg instanceof api_pb.JoinRoomResponse)) {
+    throw new Error('Expected argument of type api.JoinRoomResponse');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_api_JoinRoomResponse(buffer_arg) {
+  return api_pb.JoinRoomResponse.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
 function serialize_api_PingRequest(arg) {
   if (!(arg instanceof api_pb.PingRequest)) {
     throw new Error('Expected argument of type api.PingRequest');
@@ -192,6 +236,28 @@ var ApiService = exports.ApiService = {
     requestDeserialize: deserialize_api_GetNicknameRequest,
     responseSerialize: serialize_api_GetNicknameResponse,
     responseDeserialize: deserialize_api_GetNicknameResponse,
+  },
+  joinRoom: {
+    path: '/api.Api/JoinRoom',
+    requestStream: false,
+    responseStream: false,
+    requestType: api_pb.JoinRoomRequest,
+    responseType: api_pb.JoinRoomResponse,
+    requestSerialize: serialize_api_JoinRoomRequest,
+    requestDeserialize: deserialize_api_JoinRoomRequest,
+    responseSerialize: serialize_api_JoinRoomResponse,
+    responseDeserialize: deserialize_api_JoinRoomResponse,
+  },
+  getRoomParticipants: {
+    path: '/api.Api/GetRoomParticipants',
+    requestStream: false,
+    responseStream: false,
+    requestType: api_pb.GetRoomParticipantsRequest,
+    responseType: api_pb.GetRoomParticipantsResponse,
+    requestSerialize: serialize_api_GetRoomParticipantsRequest,
+    requestDeserialize: deserialize_api_GetRoomParticipantsRequest,
+    responseSerialize: serialize_api_GetRoomParticipantsResponse,
+    responseDeserialize: deserialize_api_GetRoomParticipantsResponse,
   },
   subscribeToEvents: {
     path: '/api.Api/SubscribeToEvents',

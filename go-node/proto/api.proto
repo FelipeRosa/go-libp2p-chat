@@ -99,7 +99,6 @@ message Event {
     NEW_CHAT_MESSAGE = 1;
     PEER_JOINED = 2;
     PEER_LEFT = 3;
-    SET_NICKNAME = 4;
   }
 
   Type type = 1;

@@ -16,8 +16,8 @@ import {
     Event as ApiEvent,
     GetNicknameRequest,
     GetNodeIDRequest,
+    JoinRoomRequest,
     SendMessageRequest,
-    SetNicknameRequest,
     SubscribeToEventsRequest,
 } from "../../gen/api_pb"
 import { ChatMessage, LocalNodeInfo } from "../common/ipc"
@@ -292,26 +292,6 @@ app.whenReady().then(() => {
                                 }
                                 break
 
-                            case ApiEvent.Type.SET_NICKNAME:
-                                {
-                                    console.log("handling SET_NICKNAME event")
-
-                                    const nicknameInfo = evt.getSetNickname()
-                                    if (!nicknameInfo) {
-                                        console.error(
-                                            "missing nickname information",
-                                        )
-                                    }
-
-                                    window.webContents.send(
-                                        "room.peer-set-nickname",
-                                        nicknameInfo?.getRoomName(),
-                                        nicknameInfo?.getPeerId(),
-                                        nicknameInfo?.getNickname(),
-                                    )
-                                }
-                                break
-
                             default:
                                 console.log("skipping unknown event")
                                 return
@@ -327,22 +307,22 @@ app.whenReady().then(() => {
                         console.log("stream ended"),
                     )
 
-                    const setNicknameReq = new SetNicknameRequest()
-                    setNicknameReq.setRoomName("global")
-                    setNicknameReq.setNickname(nickname)
-                    const setNickname = new Promise<void>((resolve, reject) => {
+                    const joinRoomReq = new JoinRoomRequest()
+                    joinRoomReq.setRoomName("global")
+                    joinRoomReq.setNickname(nickname)
+                    const joinRoom = new Promise<void>((resolve, reject) => {
                         if (state.apiClient === null) {
                             return reject()
                         }
 
-                        state.apiClient.setNickname(setNicknameReq, (err) => {
+                        state.apiClient.joinRoom(joinRoomReq, (err) => {
                             if (err !== null) {
                                 return reject(err)
                             }
                             resolve()
                         })
                     })
-                    await setNickname
+                    await joinRoom
 
                     return nodeId
                 }
