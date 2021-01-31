@@ -401,6 +401,8 @@ app.whenReady().then(() => {
 })
 
 app.on("window-all-closed", () => {
-    state.close()
     app.quit()
+})
+app.on("before-quit", () => {
+    state.close()
 })
