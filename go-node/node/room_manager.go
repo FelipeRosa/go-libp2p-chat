@@ -225,6 +225,8 @@ func (r *RoomManager) JoinAndSubscribe(roomName string, nickname string) (bool, 
 	r.putRoom(room)
 	go r.roomTopicEventHandler(room)
 	go r.roomSubscriptionHandler(room)
+	
+	r.advertiseToRoom(room)
 
 	logger.Debug("successfully joined room")
 	return true, nil
@@ -432,23 +434,27 @@ func (r *RoomManager) advertise() {
 			defer r.lock.RUnlock()
 
 			for _, room := range r.rooms {
-				// fetch this node's nickname
-				thisNickname, _ := room.getNickname(r.node.ID())
-
-				rm := RoomMessageOut{
-					Type:    RoomMessageTypeAdvertise,
-					Payload: thisNickname,
-				}
-
-				if err := r.publishRoomMessage(context.Background(), room, &rm); err != nil {
-					r.logger.Error(
-						"failed publishing room advertise",
-						zap.Error(err),
-						zap.String("room", room.topic.String()),
-					)
-				}
+				r.advertiseToRoom(room)
 			}
 		}()
+	}
+}
+
+func (r *RoomManager) advertiseToRoom(room *Room) {
+	// fetch this node's nickname
+	thisNickname, _ := room.getNickname(r.node.ID())
+
+	rm := RoomMessageOut{
+		Type:    RoomMessageTypeAdvertise,
+		Payload: thisNickname,
+	}
+
+	if err := r.publishRoomMessage(context.Background(), room, &rm); err != nil {
+		r.logger.Error(
+			"failed publishing room advertise",
+			zap.Error(err),
+			zap.String("room", room.topic.String()),
+		)
 	}
 }
 
