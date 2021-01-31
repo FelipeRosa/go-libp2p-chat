@@ -1,6 +1,6 @@
 {
   "name": "libp2p-chat",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "libp2p chat application",
   "productName": "libp2p-chat",
   "main": "./build/main.js",
