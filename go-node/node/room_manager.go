@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"sync"
 	"time"
 
@@ -16,10 +17,17 @@ import (
 	"go.uber.org/zap"
 )
 
-type setNicknameReq struct {
-	room     *Room
-	roomName string
-	nickname string
+const (
+	roomParticipantsTTLPermanent = math.MaxInt64
+	roomParticipantsTTL          = time.Second * 10
+)
+
+type participantsEntry struct {
+	ID       peer.ID `json:"id"`
+	Nickname string  `json:"nickname"`
+
+	ttl     time.Duration
+	addedAt time.Time
 }
 
 // RoomMessageType enumerates the possible types of pubsub room messages.
@@ -28,9 +36,6 @@ type RoomMessageType string
 const (
 	// RoomMessageTypeChatMessage is published when a new chat message is sent from the node.
 	RoomMessageTypeChatMessage RoomMessageType = "room.message"
-
-	// RoomMessageTypeNickname is published when a node set its nickname in a room.
-	RoomMessageTypeNickname RoomMessageType = "room.nickname"
 
 	// RoomMessageTypeAdvertise is published to indicate a node is still connected to a room.
 	RoomMessageTypeAdvertise RoomMessageType = "room.advertise"
@@ -57,7 +62,7 @@ type Room struct {
 	subscription *pubsub.Subscription
 
 	lock         sync.RWMutex
-	participants map[peer.ID]time.Time
+	participants map[peer.ID]*participantsEntry
 }
 
 func newRoom(name string, topic *pubsub.Topic, subscription *pubsub.Subscription) *Room {
@@ -65,17 +70,22 @@ func newRoom(name string, topic *pubsub.Topic, subscription *pubsub.Subscription
 		name:         name,
 		topic:        topic,
 		subscription: subscription,
-		participants: make(map[peer.ID]time.Time),
+		participants: make(map[peer.ID]*participantsEntry),
 	}
 }
 
-func (r *Room) addParticipant(peerID peer.ID) bool {
+func (r *Room) addParticipant(peerID peer.ID, nickname string, ttl time.Duration) bool {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
 	_, exists := r.participants[peerID]
-	r.participants[peerID] = time.Now()
+	r.participants[peerID] = &participantsEntry{
+		ID:       peerID,
+		Nickname: nickname,
 
+		ttl:     ttl,
+		addedAt: time.Now(),
+	}
 	return exists
 }
 
@@ -91,24 +101,24 @@ func (r *Room) removeParticipant(peerID peer.ID) bool {
 	return true
 }
 
-func (r *Room) getParticipants() []peer.ID {
+func (r *Room) getParticipants() []participantsEntry {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 
-	var participants []peer.ID
-	for peerID := range r.participants {
-		participants = append(participants, peerID)
+	var participants []participantsEntry
+	for _, p := range r.participants {
+		participants = append(participants, *p)
 	}
 
 	return participants
 }
 
-func (r *Room) refreshParticipants(ttl time.Duration, onRemove func(peer.ID)) {
+func (r *Room) refreshParticipants(onRemove func(peer.ID)) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	for peerID, lastAdvertiseTime := range r.participants {
-		if time.Now().Sub(lastAdvertiseTime) <= ttl {
+	for peerID, participant := range r.participants {
+		if time.Now().Sub(participant.addedAt) <= participant.ttl {
 			continue
 		}
 
@@ -116,6 +126,27 @@ func (r *Room) refreshParticipants(ttl time.Duration, onRemove func(peer.ID)) {
 		delete(r.participants, peerID)
 		onRemove(peerID)
 	}
+}
+
+func (r *Room) setNickname(peerID peer.ID, nickname string) bool {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	if p, found := r.participants[peerID]; found {
+		p.Nickname = nickname
+	}
+
+	return false
+}
+
+func (r *Room) getNickname(peerID peer.ID) (string, bool) {
+	r.lock.RLock()
+	defer r.lock.RUnlock()
+
+	if p, found := r.participants[peerID]; found {
+		return p.Nickname, true
+	}
+	return "", false
 }
 
 // RoomManager manages rooms through pubsub subscription and implements room operations.
@@ -130,8 +161,6 @@ type RoomManager struct {
 	eventPublisher events.Publisher
 
 	lock sync.RWMutex
-
-	nicknameCh chan setNicknameReq
 }
 
 // NewRoomManager creates a new room manager.
@@ -149,9 +178,7 @@ func NewRoomManager(logger *zap.Logger, node Node, kadDHT *dht.IpfsDHT, ps *pubs
 		kadDHT:         kadDHT,
 		rooms:          make(map[string]*Room),
 		eventPublisher: evtPub,
-		nicknameCh:     make(chan setNicknameReq),
 	}
-	go mngr.setNicknameHandler()
 	go mngr.advertise()
 	go mngr.refreshRoomsParticipants()
 
@@ -159,7 +186,7 @@ func NewRoomManager(logger *zap.Logger, node Node, kadDHT *dht.IpfsDHT, ps *pubs
 }
 
 // JoinAndSubscribe joins and subscribes to a room.
-func (r *RoomManager) JoinAndSubscribe(roomName string) (bool, error) {
+func (r *RoomManager) JoinAndSubscribe(roomName string, nickname string) (bool, error) {
 	if r.HasJoined(roomName) {
 		return false, nil
 	}
@@ -193,6 +220,8 @@ func (r *RoomManager) JoinAndSubscribe(roomName string) (bool, error) {
 	}
 
 	room := newRoom(roomName, topic, subscription)
+	room.addParticipant(r.node.ID(), nickname, roomParticipantsTTLPermanent)
+
 	r.putRoom(room)
 	go r.roomTopicEventHandler(room)
 	go r.roomSubscriptionHandler(room)
@@ -242,36 +271,32 @@ func (r *RoomManager) SetNickname(roomName string, nickname string) error {
 		return errors.New("must join the room before setting nickname")
 	}
 
-	r.nicknameCh <- setNicknameReq{
-		room:     room,
-		roomName: roomName,
-		nickname: nickname,
-	}
+	room.setNickname(r.node.ID(), nickname)
 	return nil
 }
 
 // GetNickname tries to find the nickname of a peer in the DHT.
 func (r *RoomManager) GetNickname(
-	ctx context.Context,
 	roomName string,
 	peerID peer.ID,
-) (string, error) {
-	nickname, err := r.kadDHT.GetValue(ctx, r.nicknameDHTKey(roomName, peerID))
-	if err != nil {
-		return "", errors.Wrap(err, "getting peer nickname from DHT")
+) (string, bool, error) {
+	if room, found := r.getRoom(roomName); found {
+		nickname, found := room.getNickname(peerID)
+		return nickname, found, nil
 	}
-	return string(nickname), nil
+
+	return "", false, errors.New("must join the room before getting nicknames")
 }
 
 // GetRoomParticipants returns the list of peers in a room.
-func (r *RoomManager) GetRoomParticipants(roomName string) ([]peer.ID, error) {
+func (r *RoomManager) GetRoomParticipants(roomName string) ([]participantsEntry, error) {
 	room, found := r.getRoom(roomName)
 	if !found {
 		return nil, errors.New("must join the room before getting participants")
 	}
 
 	// always append the node to the participants list
-	return append(room.getParticipants(), r.node.ID()), nil
+	return room.getParticipants(), nil
 }
 
 func (r *RoomManager) putRoom(room *Room) {
@@ -310,7 +335,7 @@ func (r *RoomManager) roomTopicEventHandler(room *Room) {
 				PeerID:   peerEvt.Peer,
 				RoomName: room.name,
 			}
-			room.addParticipant(peerEvt.Peer)
+			room.addParticipant(peerEvt.Peer, "", roomParticipantsTTL)
 
 		case pubsub.PeerLeave:
 			evt = &events.PeerLeft{
@@ -362,22 +387,13 @@ func (r *RoomManager) roomSubscriptionHandler(room *Room) {
 				r.logger.Error("failed publishing room manager event", zap.Error(err))
 			}
 
-		case RoomMessageTypeNickname:
-			var nicknameEvt events.SetNickname
-			if err := json.Unmarshal(rm.Payload, &nicknameEvt); err != nil {
-				r.logger.Warn("ignoring message", zap.Error(errors.Wrap(
-					err,
-					"unmarshalling payload",
-				)))
+		case RoomMessageTypeAdvertise:
+			var nickname string
+			if err := json.Unmarshal(rm.Payload, &nickname); err != nil {
+				r.logger.Warn("ignoring message", zap.Error(errors.Wrap(err, "unmarshalling payload")))
 				continue
 			}
-
-			if err := r.eventPublisher.Publish(&nicknameEvt); err != nil {
-				r.logger.Error("failed publishing room manager event", zap.Error(err))
-			}
-
-		case RoomMessageTypeAdvertise:
-			room.addParticipant(subMsg.ReceivedFrom)
+			room.addParticipant(subMsg.ReceivedFrom, nickname, roomParticipantsTTL)
 
 		default:
 			r.logger.Warn(
@@ -405,55 +421,8 @@ func (r *RoomManager) publishRoomMessage(
 	return nil
 }
 
-func (r *RoomManager) setNicknameHandler() {
-	ctx := context.Background()
-
-	for {
-		req := <-r.nicknameCh
-
-		for {
-			// Wait until we have some peers
-			if r.kadDHT.RoutingTable().Size() == 0 {
-				r.logger.Debug("waiting for peers to store nickname")
-				<-time.After(time.Second)
-				continue
-			}
-
-			break
-		}
-
-		r.logger.Debug("storing nickname in DHT")
-		err := r.kadDHT.PutValue(
-			ctx,
-			r.nicknameDHTKey(req.roomName, r.node.ID()),
-			[]byte(req.nickname),
-		)
-		if err != nil {
-			r.logger.Error("failed storing nickname in DHT", zap.Error(err))
-			continue
-		}
-
-		rm := &RoomMessageOut{
-			Type: RoomMessageTypeNickname,
-			Payload: events.SetNickname{
-				RoomName: req.roomName,
-				PeerID:   r.node.ID(),
-				Nickname: req.nickname,
-			},
-		}
-		if err := r.publishRoomMessage(ctx, req.room, rm); err != nil {
-			r.logger.Error("failed publishing room manager event", zap.Error(err))
-		}
-	}
-}
-
-func (r *RoomManager) nicknameDHTKey(roomName string, pid peer.ID) string {
-	return fmt.Sprintf("/%s/%s_nickname_%s", RoomInfoNamespace, roomName, pid.Pretty())
-}
-
 func (r *RoomManager) advertise() {
 	tick := time.Tick(time.Second * 5)
-	rm := RoomMessageOut{Type: RoomMessageTypeAdvertise}
 
 	for {
 		<-tick
@@ -463,6 +432,14 @@ func (r *RoomManager) advertise() {
 			defer r.lock.RUnlock()
 
 			for _, room := range r.rooms {
+				// fetch this node's nickname
+				thisNickname, _ := room.getNickname(r.node.ID())
+
+				rm := RoomMessageOut{
+					Type:    RoomMessageTypeAdvertise,
+					Payload: thisNickname,
+				}
+
 				if err := r.publishRoomMessage(context.Background(), room, &rm); err != nil {
 					r.logger.Error(
 						"failed publishing room advertise",
@@ -477,7 +454,6 @@ func (r *RoomManager) advertise() {
 
 func (r *RoomManager) refreshRoomsParticipants() {
 	tick := time.Tick(time.Second)
-	ttl := time.Second * 10
 
 	for {
 		<-tick
@@ -487,7 +463,7 @@ func (r *RoomManager) refreshRoomsParticipants() {
 			defer r.lock.RUnlock()
 
 			for _, room := range r.rooms {
-				room.refreshParticipants(ttl, func(peerID peer.ID) {
+				room.refreshParticipants(func(peerID peer.ID) {
 					// consider that if we haven't hear of this peer for a while, it disconnected from the room
 					err := r.eventPublisher.Publish(&events.PeerLeft{
 						PeerID:   peerID,

@@ -24,7 +24,10 @@ import (
 	"go.uber.org/zap"
 )
 
-const privKeyFileName = "libp2p-chat.privkey"
+const (
+	discoveryNamespace = "/chat"
+	privKeyFileName    = "libp2p-chat.privkey"
+)
 
 type Node interface {
 	ID() peer.ID
@@ -34,11 +37,11 @@ type Node interface {
 
 	SendMessage(ctx context.Context, roomName string, msg string) error
 
-	JoinRoom(roomName string) error
-	GetRoomParticipants(roomName string) ([]peer.ID, error)
+	JoinRoom(roomName string, nickname string) error
+	GetRoomParticipants(roomName string) ([]participantsEntry, error)
 
 	SetNickname(roomName string, nickname string) error
-	GetNickname(ctx context.Context, roomName string, peerID peer.ID) (string, error)
+	GetNickname(roomName string, peerID peer.ID) (string, error)
 
 	SubscribeToEvents() (events.Subscriber, error)
 
@@ -142,9 +145,8 @@ func (n *node) Bootstrap(ctx context.Context, nodeAddrs []multiaddr.Multiaddr) e
 		ctx,
 		n.host,
 		dht.BootstrapPeers(bootstrappers...),
-		dht.ProtocolPrefix("/"+DiscoveryNamespace),
+		dht.ProtocolPrefix(discoveryNamespace),
 		dht.Mode(dht.ModeAutoServer),
-		dht.NamespacedValidator(RoomInfoNamespace, &roomDataValidator{}),
 	)
 	if err != nil {
 		return errors.Wrap(err, "creating routing DHT")
@@ -177,7 +179,7 @@ func (n *node) Bootstrap(ctx context.Context, nodeAddrs []multiaddr.Multiaddr) e
 	rd := discovery.NewRoutingDiscovery(kadDHT)
 
 	n.logger.Info("starting advertising thread")
-	discovery.Advertise(ctx, rd, DiscoveryNamespace)
+	discovery.Advertise(ctx, rd, discoveryNamespace)
 
 	// try finding more peers
 	go func() {
@@ -186,7 +188,7 @@ func (n *node) Bootstrap(ctx context.Context, nodeAddrs []multiaddr.Multiaddr) e
 
 			peersChan, err := rd.FindPeers(
 				ctx,
-				DiscoveryNamespace,
+				discoveryNamespace,
 				discovery2.Limit(100),
 			)
 			if err != nil {
@@ -227,18 +229,18 @@ func (n *node) SendMessage(ctx context.Context, roomName string, msg string) err
 	return nil
 }
 
-func (n *node) JoinRoom(roomName string) error {
+func (n *node) JoinRoom(roomName string, nickname string) error {
 	if n.bootstrapOnly {
 		return errors.New("can't join room on a bootstrap-only node")
 	}
 
-	if _, err := n.roomManager.JoinAndSubscribe(roomName); err != nil {
+	if _, err := n.roomManager.JoinAndSubscribe(roomName, nickname); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (n *node) GetRoomParticipants(roomName string) ([]peer.ID, error) {
+func (n *node) GetRoomParticipants(roomName string) ([]participantsEntry, error) {
 	if n.bootstrapOnly {
 		return nil, errors.New("can't get room participants on a bootstrap-only node")
 	}
@@ -258,11 +260,18 @@ func (n *node) SetNickname(roomName string, nickname string) error {
 }
 
 func (n *node) GetNickname(
-	ctx context.Context,
 	roomName string,
 	peerID peer.ID,
 ) (string, error) {
-	return n.roomManager.GetNickname(ctx, roomName, peerID)
+	nickname, found, err := n.roomManager.GetNickname(roomName, peerID)
+	if err != nil {
+		return "", err
+	}
+	if !found {
+		return "", errors.New("peer not found")
+	}
+
+	return nickname, nil
 }
 
 func (n *node) SubscribeToEvents() (events.Subscriber, error) {

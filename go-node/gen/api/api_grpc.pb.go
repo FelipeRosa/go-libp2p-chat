@@ -23,6 +23,7 @@ type ApiClient interface {
 	GetNodeID(ctx context.Context, in *GetNodeIDRequest, opts ...grpc.CallOption) (*GetNodeIDResponse, error)
 	SetNickname(ctx context.Context, in *SetNicknameRequest, opts ...grpc.CallOption) (*SetNicknameResponse, error)
 	GetNickname(ctx context.Context, in *GetNicknameRequest, opts ...grpc.CallOption) (*GetNicknameResponse, error)
+	JoinRoom(ctx context.Context, in *JoinRoomRequest, opts ...grpc.CallOption) (*JoinRoomResponse, error)
 	GetRoomParticipants(ctx context.Context, in *GetRoomParticipantsRequest, opts ...grpc.CallOption) (*GetRoomParticipantsResponse, error)
 	SubscribeToEvents(ctx context.Context, in *SubscribeToEventsRequest, opts ...grpc.CallOption) (Api_SubscribeToEventsClient, error)
 }
@@ -80,6 +81,15 @@ func (c *apiClient) GetNickname(ctx context.Context, in *GetNicknameRequest, opt
 	return out, nil
 }
 
+func (c *apiClient) JoinRoom(ctx context.Context, in *JoinRoomRequest, opts ...grpc.CallOption) (*JoinRoomResponse, error) {
+	out := new(JoinRoomResponse)
+	err := c.cc.Invoke(ctx, "/api.Api/JoinRoom", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *apiClient) GetRoomParticipants(ctx context.Context, in *GetRoomParticipantsRequest, opts ...grpc.CallOption) (*GetRoomParticipantsResponse, error) {
 	out := new(GetRoomParticipantsResponse)
 	err := c.cc.Invoke(ctx, "/api.Api/GetRoomParticipants", in, out, opts...)
@@ -130,6 +140,7 @@ type ApiServer interface {
 	GetNodeID(context.Context, *GetNodeIDRequest) (*GetNodeIDResponse, error)
 	SetNickname(context.Context, *SetNicknameRequest) (*SetNicknameResponse, error)
 	GetNickname(context.Context, *GetNicknameRequest) (*GetNicknameResponse, error)
+	JoinRoom(context.Context, *JoinRoomRequest) (*JoinRoomResponse, error)
 	GetRoomParticipants(context.Context, *GetRoomParticipantsRequest) (*GetRoomParticipantsResponse, error)
 	SubscribeToEvents(*SubscribeToEventsRequest, Api_SubscribeToEventsServer) error
 	mustEmbedUnimplementedApiServer()
@@ -153,6 +164,9 @@ func (UnimplementedApiServer) SetNickname(context.Context, *SetNicknameRequest) 
 }
 func (UnimplementedApiServer) GetNickname(context.Context, *GetNicknameRequest) (*GetNicknameResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetNickname not implemented")
+}
+func (UnimplementedApiServer) JoinRoom(context.Context, *JoinRoomRequest) (*JoinRoomResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method JoinRoom not implemented")
 }
 func (UnimplementedApiServer) GetRoomParticipants(context.Context, *GetRoomParticipantsRequest) (*GetRoomParticipantsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRoomParticipants not implemented")
@@ -263,6 +277,24 @@ func _Api_GetNickname_Handler(srv interface{}, ctx context.Context, dec func(int
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Api_JoinRoom_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(JoinRoomRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ApiServer).JoinRoom(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.Api/JoinRoom",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ApiServer).JoinRoom(ctx, req.(*JoinRoomRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Api_GetRoomParticipants_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetRoomParticipantsRequest)
 	if err := dec(in); err != nil {
@@ -328,6 +360,10 @@ var Api_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetNickname",
 			Handler:    _Api_GetNickname_Handler,
+		},
+		{
+			MethodName: "JoinRoom",
+			Handler:    _Api_JoinRoom_Handler,
 		},
 		{
 			MethodName: "GetRoomParticipants",

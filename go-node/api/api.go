@@ -1,7 +1,7 @@
 package api
 
 import (
-	"context"
+	context "context"
 
 	apigen "github.com/FelipeRosa/go-libp2p-chat/go-node/gen/api"
 	"github.com/FelipeRosa/go-libp2p-chat/go-node/node"
@@ -57,7 +57,7 @@ func (s *Server) SetNickname(_ context.Context, request *apigen.SetNicknameReque
 }
 
 func (s *Server) GetNickname(
-	ctx context.Context,
+	_ context.Context,
 	request *apigen.GetNicknameRequest,
 ) (*apigen.GetNicknameResponse, error) {
 	s.logger.Info("handling GetNickname")
@@ -68,7 +68,7 @@ func (s *Server) GetNickname(
 		return nil, err
 	}
 
-	nickname, err := s.node.GetNickname(ctx, request.RoomName, peerID)
+	nickname, err := s.node.GetNickname(request.RoomName, peerID)
 	if err != nil {
 		s.logger.Error("failed getting peer nickname", zap.Error(err))
 		return nil, err
@@ -77,22 +77,33 @@ func (s *Server) GetNickname(
 	return &apigen.GetNicknameResponse{Nickname: nickname}, nil
 }
 
+func (s *Server) JoinRoom(_ context.Context, request *apigen.JoinRoomRequest) (*apigen.JoinRoomResponse, error) {
+	if err := s.node.JoinRoom(request.RoomName, request.Nickname); err != nil {
+		s.logger.Error("failed joining room", zap.Error(err))
+		return nil, err
+	}
+	return &apigen.JoinRoomResponse{}, nil
+}
+
 func (s *Server) GetRoomParticipants(
 	_ context.Context,
 	request *apigen.GetRoomParticipantsRequest,
 ) (*apigen.GetRoomParticipantsResponse, error) {
-	peerIDs, err := s.node.GetRoomParticipants(request.RoomName)
+	participants, err := s.node.GetRoomParticipants(request.RoomName)
 	if err != nil {
 		s.logger.Error("failed getting room participants", zap.Error(err))
 		return nil, err
 	}
 
-	var prettyPeerIDs []string
-	for _, peerID := range peerIDs {
-		prettyPeerIDs = append(prettyPeerIDs, peerID.Pretty())
+	var participantsRes []*apigen.RoomParticipant
+	for _, p := range participants {
+		participantsRes = append(participantsRes, &apigen.RoomParticipant{
+			Id:       p.ID.Pretty(),
+			Nickname: p.Nickname,
+		})
 	}
 
-	return &apigen.GetRoomParticipantsResponse{PeerIds: prettyPeerIDs}, nil
+	return &apigen.GetRoomParticipantsResponse{Participants: participantsRes}, nil
 }
 
 func (s *Server) SubscribeToEvents(

@@ -13,6 +13,7 @@ service Api {
   rpc SetNickname(SetNicknameRequest) returns (SetNicknameResponse);
   rpc GetNickname(GetNicknameRequest) returns (GetNicknameResponse);
 
+  rpc JoinRoom(JoinRoomRequest) returns (JoinRoomResponse);
   rpc GetRoomParticipants(GetRoomParticipantsRequest) returns (GetRoomParticipantsResponse);
 
   rpc SubscribeToEvents(SubscribeToEventsRequest) returns (stream Event);
@@ -55,11 +56,21 @@ message GetNicknameResponse {
   string nickname = 1;
 }
 
+message JoinRoomRequest {
+  string room_name = 1;
+  string nickname = 2;
+}
+message JoinRoomResponse {}
+
+message RoomParticipant {
+  string id = 1;
+  string nickname = 2;
+}
 message GetRoomParticipantsRequest {
   string room_name = 1;
 }
 message GetRoomParticipantsResponse {
-  repeated string peer_ids = 1;
+  repeated RoomParticipant participants = 1;
 }
 
 message SubscribeToEventsRequest {}

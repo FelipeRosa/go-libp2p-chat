@@ -59,15 +59,6 @@ func main() {
 		return
 	}
 
-	// skip joining the global room if this node is a bootstrap-only node since its purpose is just to join
-	// other nodes into the network
-	if !cfg.BootstrapOnly {
-		if err := n.JoinRoom("global"); err != nil {
-			logger.Error("failed joining global room")
-			return
-		}
-	}
-
 	if cfg.APIPort != 0 {
 		var apiListenerAddr string
 		if cfg.APILocal {
