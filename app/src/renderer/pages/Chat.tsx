@@ -56,71 +56,19 @@ export const Chat = () => {
 
     return (
         <div className={"chat"}>
-            <div className={"room-info"}>
-                {localNodeInfo && (
-                    <div>
-                        <div className={"room-name"}>
-                            Room: <b>{localNodeInfo.currentRoomName}</b>
+            <div className={"chat-room"}>
+                <div className={"room-info"}>
+                    {localNodeInfo && (
+                        <div>
+                            <div className={"room-name"}>
+                                Room: <b>{localNodeInfo.currentRoomName}</b>
+                            </div>
+                            <div className={"local-node-id"}>
+                                <b>Local Node Address</b>:{" "}
+                                {localNodeInfo.address}
+                            </div>
                         </div>
-                        <div className={"local-node-id"}>
-                            <b>Local Node Address</b>: {localNodeInfo.address}
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            <div className={"chat-body"}>
-                <div className={"chat-panel"}>
-                    <div className={"chat-contents"} ref={msgsDiv}>
-                        {contents.map((msg, index) =>
-                            msg.type === "chat-message" ? (
-                                <div key={index} className={"chat-message"}>
-                                    <div className={"chat-message-timestamp"}>
-                                        {formatTimestamp(msg.timestamp)}
-                                    </div>
-                                    <div className={"chat-message-sender"}>
-                                        {msg.sender.nickname}
-                                    </div>
-                                    <div className={"chat-message-value"}>
-                                        {msg.value}
-                                    </div>
-                                </div>
-                            ) : (
-                                <div
-                                    key={index}
-                                    className={"chat-notification"}
-                                >
-                                    <div className={"chat-message-timestamp"}>
-                                        {formatTimestamp(msg.timestamp)}
-                                    </div>
-                                    <div className={"chat-message-value"}>
-                                        {msg.value}
-                                    </div>
-                                </div>
-                            ),
-                        )}
-                    </div>
-
-                    <div className={"chat-send"}>
-                        <input
-                            className={"chat-send-input"}
-                            type={"text"}
-                            placeholder={"Write message..."}
-                            autoFocus={true}
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                    sendMsg()
-                                }
-                            }}
-                            ref={inputBox}
-                        />
-                        <input
-                            className={"chat-send-btn"}
-                            type={"button"}
-                            value={"Send"}
-                            onClick={sendMsg}
-                        />
-                    </div>
+                    )}
                 </div>
 
                 <div className={"chat-participants"}>
@@ -129,8 +77,60 @@ export const Chat = () => {
                     </div>
 
                     {participants.map((p, i) => (
-                        <div key={i} className={"chat-participant"}>{p.nickname.trim() || p.id}</div>
+                        <div key={i} className={"chat-participant"}>
+                            {p.nickname.trim() || p.id}
+                        </div>
                     ))}
+                </div>
+            </div>
+
+            <div className={"chat-panel"}>
+                <div className={"chat-contents"} ref={msgsDiv}>
+                    {contents.map((msg, index) =>
+                        msg.type === "chat-message" ? (
+                            <div key={index} className={"chat-message"}>
+                                <div className={"chat-message-timestamp"}>
+                                    {formatTimestamp(msg.timestamp)}
+                                </div>
+                                <div className={"chat-message-sender"}>
+                                    {msg.sender.nickname}
+                                </div>
+                                <div className={"chat-message-value"}>
+                                    {msg.value}
+                                </div>
+                            </div>
+                        ) : (
+                            <div key={index} className={"chat-notification"}>
+                                <div className={"chat-message-timestamp"}>
+                                    {formatTimestamp(msg.timestamp)}
+                                </div>
+                                <div className={"chat-message-value"}>
+                                    {msg.value}
+                                </div>
+                            </div>
+                        ),
+                    )}
+                </div>
+
+                <div className={"chat-send"}>
+                    <input
+                        className={"chat-send-input"}
+                        type={"text"}
+                        placeholder={"Write message..."}
+                        autoFocus={true}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                                sendMsg()
+                            }
+                        }}
+                        ref={inputBox}
+                    />
+                    <input
+                        className={"chat-send-btn"}
+                        type={"button"}
+                        value={"Send"}
+                        onClick={sendMsg}
+                    />
                 </div>
             </div>
         </div>

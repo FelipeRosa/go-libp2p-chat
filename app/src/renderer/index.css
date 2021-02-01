@@ -66,21 +66,18 @@ button, button[type="submit"], input[type="button"], input[type="submit"] {
 
 .chat {
     display: flex;
-    flex-flow: column nowrap;
-    height: 100%;
-}
-
-.chat-body {
-    display: flex;
     flex-flow: row nowrap;
     height: 100%;
 }
 
-.chat-participants {
+.chat-room {
     flex: 1;
-    border-left: 1px solid #44475a;
-    padding: 4px;
+    border-right: 1px solid #44475a;
     overflow: auto;
+}
+
+.chat-participants {
+    padding: 8px;
 }
 
 .chat-participant {
@@ -90,7 +87,7 @@ button, button[type="submit"], input[type="button"], input[type="submit"] {
 .chat-participants-title {
     font-size: 14px;
     font-weight: bold;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
 }
 
 .chat-panel {
@@ -109,6 +106,8 @@ button, button[type="submit"], input[type="button"], input[type="submit"] {
     overflow-x: hidden;
     overflow-y: scroll;
     overflow-wrap: anywhere;
+
+    padding-top: 8px;
 
     width: 100%;
 }
@@ -242,6 +241,7 @@ button, button[type="submit"], input[type="button"], input[type="submit"] {
 
 .chat-contents::-webkit-scrollbar,
 .chat-participants::-webkit-scrollbar,
+.chat-room::-webkit-scrollbar,
 #root::-webkit-scrollbar,
 input[type="textarea"]::-webkit-scrollbar,
 textarea::-webkit-scrollbar {
@@ -252,6 +252,7 @@ textarea::-webkit-scrollbar {
 
 .chat-contents::-webkit-scrollbar-thumb,
 .chat-participants::-webkit-scrollbar-thumb,
+.chat-room::-webkit-scrollbar-thumb,
 #root::-webkit-scrollbar-thumb,
 input[type="textarea"]::-webkit-scrollbar-thumb,
 textarea::-webkit-scrollbar-thumb {
