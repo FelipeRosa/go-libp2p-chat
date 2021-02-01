@@ -21,8 +21,8 @@ Available platforms:
 
 | Platform | Installers |
 |----------|------------|
-| Linux    | [.rpm](https://github.com/FelipeRosa/go-libp2p-chat/releases/download/v0.1.0/libp2p-chat-0.1.0-1.x86_64.rpm), [.deb](https://github.com/FelipeRosa/go-libp2p-chat/releases/download/v0.1.0/libp2p-chat_0.1.0_amd64.deb)|
-| macOS    | [.dmg](https://github.com/FelipeRosa/go-libp2p-chat/releases/download/v0.1.0/libp2p-chat_macos-x64.dmg)|
+| Linux    | [.rpm](https://github.com/FelipeRosa/go-libp2p-chat/releases/download/v0.2.0/libp2p-chat-0.2.0-1.x86_64.rpm), [.deb](https://github.com/FelipeRosa/go-libp2p-chat/releases/download/v0.2.0/libp2p-chat_0.2.0_amd64.deb)|
+| macOS    | [.dmg](https://github.com/FelipeRosa/go-libp2p-chat/releases/download/v0.2.0/libp2p-chat_0.2.0.dmg)|
 
 For more options check out the [latest release page](https://github.com/FelipeRosa/go-libp2p-chat/releases/latest).
 
