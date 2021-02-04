@@ -4,7 +4,7 @@ Peer-to-peer chat app built using libp2p as a learning project.
 
 <img
     alt="Application usage gif"
-    src="docs/readme-gif.gif"
+    src="./readme-gif.gif"
     width="640px"
 />
 
