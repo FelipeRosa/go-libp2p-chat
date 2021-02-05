@@ -22,7 +22,7 @@ export const Chat = () => {
     }, [contents])
 
     const formatTimestamp = (ts: number): string => {
-        const d = new Date(ts * 1000)
+        const d = new Date(ts)
         const h = d.getHours().toString().padStart(2, "0")
         const m = d.getMinutes().toString().padStart(2, "0")
 
@@ -47,7 +47,7 @@ export const Chat = () => {
                         id: localNodeInfo.id,
                         nickname: localNodeInfo.nickname,
                     },
-                    timestamp: Number(new Date()) / 1000,
+                    timestamp: Number(new Date()),
                     value: msg,
                 },
             })

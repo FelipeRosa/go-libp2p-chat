@@ -262,7 +262,9 @@ app.whenReady().then(() => {
                                                         res?.getNickname() ||
                                                         "Unnamed",
                                                 },
-                                                timestamp: msg.getTimestamp(),
+                                                // the node sends in seconds, we need it in milliseconds
+                                                timestamp:
+                                                    msg.getTimestamp() * 1000,
                                                 value: msg.getValue(),
                                             }
 
