@@ -225,7 +225,7 @@ func (r *RoomManager) JoinAndSubscribe(roomName string, nickname string) (bool, 
 	r.putRoom(room)
 	go r.roomTopicEventHandler(room)
 	go r.roomSubscriptionHandler(room)
-	
+
 	r.advertiseToRoom(room)
 
 	logger.Debug("successfully joined room")

@@ -158,35 +158,24 @@ func (n *node) Bootstrap(ctx context.Context, nodeAddrs []multiaddr.Multiaddr) e
 		return errors.Wrap(err, "bootstrapping DHT")
 	}
 
-	// Setup room manager
-	roomManager, roomManagerEvtSub := NewRoomManager(n.logger, n, n.kadDHT, n.ps)
-	n.roomManager = roomManager
-	go n.joinRoomManagerEvents(roomManagerEvtSub)
-
-	// We can return at this point, since we have no other nodes to advertise too.
-	// Is this right?
-	if len(nodeAddrs) == 0 {
-		return nil
-	}
-
-	// connect to bootstrap nodes
+	// connect to bootstrap nodes, if any
 	for _, pi := range bootstrappers {
 		if err := n.host.Connect(ctx, pi); err != nil {
 			return errors.Wrap(err, "connecting to bootstrap node")
 		}
 	}
 
-	rd := discovery.NewRoutingDiscovery(kadDHT)
+	routingDiscovery := discovery.NewRoutingDiscovery(kadDHT)
 
 	n.logger.Info("starting advertising thread")
-	discovery.Advertise(ctx, rd, discoveryNamespace)
+	discovery.Advertise(ctx, routingDiscovery, discoveryNamespace)
 
 	// try finding more peers
 	go func() {
 		for {
 			n.logger.Info("looking for peers...")
 
-			peersChan, err := rd.FindPeers(
+			peersChan, err := routingDiscovery.FindPeers(
 				ctx,
 				discoveryNamespace,
 				discovery2.Limit(100),
@@ -201,10 +190,16 @@ func (n *node) Bootstrap(ctx context.Context, nodeAddrs []multiaddr.Multiaddr) e
 			}
 
 			n.logger.Info("done looking for peers",
-				zap.Int("peerCount", n.host.Peerstore().Peers().Len()),
+				zap.Int("peerCount", kadDHT.RoutingTable().Size()),
 			)
 
-			<-time.After(time.Minute)
+			var peerInfos []string
+			for _, peerInfo := range kadDHT.RoutingTable().ListPeers() {
+				peerInfos = append(peerInfos, peerInfo.String())
+			}
+			n.logger.Debug("peer list", zap.Strings("peers", peerInfos))
+
+			<-time.After(time.Second * 10)
 		}
 	}()
 
