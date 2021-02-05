@@ -194,7 +194,8 @@ func (n *node) Bootstrap(ctx context.Context, nodeAddrs []multiaddr.Multiaddr) e
 			)
 
 			var peerInfos []string
-			for _, peerInfo := range kadDHT.RoutingTable().ListPeers() {
+			for _, peerID := range kadDHT.RoutingTable().ListPeers() {
+				peerInfo := n.host.Peerstore().PeerInfo(peerID)
 				peerInfos = append(peerInfos, peerInfo.String())
 			}
 			n.logger.Debug("peer list", zap.Strings("peers", peerInfos))
