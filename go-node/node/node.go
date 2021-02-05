@@ -203,6 +203,12 @@ func (n *node) Bootstrap(ctx context.Context, nodeAddrs []multiaddr.Multiaddr) e
 		}
 	}()
 
+	// Setup room manager
+	// connect to bootstrap nodes, if any
+	roomManager, roomManagerEvtSub := NewRoomManager(n.logger, n, n.kadDHT, n.ps)
+	n.roomManager = roomManager
+	go n.joinRoomManagerEvents(roomManagerEvtSub)
+
 	return nil
 }
 
