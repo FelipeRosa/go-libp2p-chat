@@ -115,7 +115,12 @@ app.whenReady().then(() => {
 
     ipcMain.on(
         "chat.connect",
-        (_e, nickname: string, bootstrapAddrs: string) => {
+        (
+            _e,
+            connectNickname: string,
+            connectRoomName: string,
+            bootstrapAddrs: string,
+        ) => {
             state.close()
 
             state.connecting = true
@@ -234,9 +239,17 @@ app.whenReady().then(() => {
 
                                     const senderId = msg.getSenderId()
 
+                                    const roomName = evt
+                                        .getNewChatMessage()
+                                        ?.getRoomName()
+                                    if (!roomName) {
+                                        console.error("missing room name")
+                                        return
+                                    }
+
                                     // need to get the sender nickname
                                     const getNicknameReq = new GetNicknameRequest()
-                                    getNicknameReq.setRoomName("global")
+                                    getNicknameReq.setRoomName(roomName)
                                     getNicknameReq.setPeerId(senderId)
                                     state.apiClient?.getNickname(
                                         getNicknameReq,
@@ -316,8 +329,8 @@ app.whenReady().then(() => {
                     )
 
                     const joinRoomReq = new JoinRoomRequest()
-                    joinRoomReq.setRoomName("global")
-                    joinRoomReq.setNickname(nickname)
+                    joinRoomReq.setRoomName(connectRoomName)
+                    joinRoomReq.setNickname(connectNickname)
                     const joinRoom = new Promise<void>((resolve, reject) => {
                         if (state.apiClient === null) {
                             return reject()
@@ -334,7 +347,7 @@ app.whenReady().then(() => {
 
                     state.getParticipantsInterval = setInterval(() => {
                         const req = new GetRoomParticipantsRequest()
-                        req.setRoomName("global")
+                        req.setRoomName(connectRoomName)
                         state.apiClient?.getRoomParticipants(
                             req,
                             (err, res) => {
@@ -349,16 +362,16 @@ app.whenReady().then(() => {
                                     ?.getParticipantsList()
                                     .map((p) => p.toObject())
                                     .sort((p1, p2) =>
-                                        p1.id < p2.id
+                                        p1.nickname < p2.nickname
                                             ? -1
-                                            : p1.id === p2.id
+                                            : p1.nickname === p2.nickname
                                             ? 0
                                             : 1,
                                     )
 
                                 window.webContents.send(
                                     "room.participants",
-                                    "global",
+                                    connectRoomName,
                                     participants || [],
                                 )
                             },
@@ -378,8 +391,8 @@ app.whenReady().then(() => {
                         window.webContents.send("chat.connected", {
                             address: `/ip4/127.0.0.1/tcp/${nodePort}/p2p/${nodeId}`,
                             id: nodeId,
-                            nickname: nickname,
-                            currentRoomName: "global",
+                            nickname: connectNickname,
+                            currentRoomName: connectRoomName,
                         } as LocalNodeInfo)
                     })
                     .catch((err) => {
@@ -395,7 +408,9 @@ app.whenReady().then(() => {
         request.setValue(msg)
 
         state.apiClient?.sendMessage(request, (err, res) => {
-            console.log(err, res)
+            if (err !== null) {
+                console.error("failed sending message", err)
+            }
         })
     })
 })

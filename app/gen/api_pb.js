@@ -1022,8 +1022,8 @@ proto.api.ChatMessage.prototype.toObject = function(opt_includeInstance) {
 proto.api.ChatMessage.toObject = function(includeInstance, msg) {
   var f, obj = {
     senderId: jspb.Message.getFieldWithDefault(msg, 1, ""),
-    timestamp: jspb.Message.getFieldWithDefault(msg, 3, 0),
-    value: jspb.Message.getFieldWithDefault(msg, 4, "")
+    timestamp: jspb.Message.getFieldWithDefault(msg, 2, 0),
+    value: jspb.Message.getFieldWithDefault(msg, 3, "")
   };
 
   if (includeInstance) {
@@ -1064,11 +1064,11 @@ proto.api.ChatMessage.deserializeBinaryFromReader = function(msg, reader) {
       var value = /** @type {string} */ (reader.readString());
       msg.setSenderId(value);
       break;
-    case 3:
+    case 2:
       var value = /** @type {number} */ (reader.readInt64());
       msg.setTimestamp(value);
       break;
-    case 4:
+    case 3:
       var value = /** @type {string} */ (reader.readString());
       msg.setValue(value);
       break;
@@ -1111,14 +1111,14 @@ proto.api.ChatMessage.serializeBinaryToWriter = function(message, writer) {
   f = message.getTimestamp();
   if (f !== 0) {
     writer.writeInt64(
-      3,
+      2,
       f
     );
   }
   f = message.getValue();
   if (f.length > 0) {
     writer.writeString(
-      4,
+      3,
       f
     );
   }
@@ -1144,11 +1144,11 @@ proto.api.ChatMessage.prototype.setSenderId = function(value) {
 
 
 /**
- * optional int64 timestamp = 3;
+ * optional int64 timestamp = 2;
  * @return {number}
  */
 proto.api.ChatMessage.prototype.getTimestamp = function() {
-  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 3, 0));
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 2, 0));
 };
 
 
@@ -1157,16 +1157,16 @@ proto.api.ChatMessage.prototype.getTimestamp = function() {
  * @return {!proto.api.ChatMessage} returns this
  */
 proto.api.ChatMessage.prototype.setTimestamp = function(value) {
-  return jspb.Message.setProto3IntField(this, 3, value);
+  return jspb.Message.setProto3IntField(this, 2, value);
 };
 
 
 /**
- * optional string value = 4;
+ * optional string value = 3;
  * @return {string}
  */
 proto.api.ChatMessage.prototype.getValue = function() {
-  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 4, ""));
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 3, ""));
 };
 
 
@@ -1175,7 +1175,7 @@ proto.api.ChatMessage.prototype.getValue = function() {
  * @return {!proto.api.ChatMessage} returns this
  */
 proto.api.ChatMessage.prototype.setValue = function(value) {
-  return jspb.Message.setProto3StringField(this, 4, value);
+  return jspb.Message.setProto3StringField(this, 3, value);
 };
 
 
@@ -2805,7 +2805,8 @@ proto.api.EvtNewChatMessage.prototype.toObject = function(opt_includeInstance) {
  */
 proto.api.EvtNewChatMessage.toObject = function(includeInstance, msg) {
   var f, obj = {
-    chatMessage: (f = msg.getChatMessage()) && proto.api.ChatMessage.toObject(includeInstance, f)
+    chatMessage: (f = msg.getChatMessage()) && proto.api.ChatMessage.toObject(includeInstance, f),
+    roomName: jspb.Message.getFieldWithDefault(msg, 2, "")
   };
 
   if (includeInstance) {
@@ -2847,6 +2848,10 @@ proto.api.EvtNewChatMessage.deserializeBinaryFromReader = function(msg, reader) 
       reader.readMessage(value,proto.api.ChatMessage.deserializeBinaryFromReader);
       msg.setChatMessage(value);
       break;
+    case 2:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setRoomName(value);
+      break;
     default:
       reader.skipField();
       break;
@@ -2882,6 +2887,13 @@ proto.api.EvtNewChatMessage.serializeBinaryToWriter = function(message, writer) 
       1,
       f,
       proto.api.ChatMessage.serializeBinaryToWriter
+    );
+  }
+  f = message.getRoomName();
+  if (f.length > 0) {
+    writer.writeString(
+      2,
+      f
     );
   }
 };
@@ -2921,6 +2933,24 @@ proto.api.EvtNewChatMessage.prototype.clearChatMessage = function() {
  */
 proto.api.EvtNewChatMessage.prototype.hasChatMessage = function() {
   return jspb.Message.getField(this, 1) != null;
+};
+
+
+/**
+ * optional string room_name = 2;
+ * @return {string}
+ */
+proto.api.EvtNewChatMessage.prototype.getRoomName = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 2, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.api.EvtNewChatMessage} returns this
+ */
+proto.api.EvtNewChatMessage.prototype.setRoomName = function(value) {
+  return jspb.Message.setProto3StringField(this, 2, value);
 };
 
 

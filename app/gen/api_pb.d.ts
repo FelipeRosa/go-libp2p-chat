@@ -355,6 +355,9 @@ export class EvtNewChatMessage extends jspb.Message {
   getChatMessage(): ChatMessage | undefined;
   setChatMessage(value?: ChatMessage): void;
 
+  getRoomName(): string;
+  setRoomName(value: string): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): EvtNewChatMessage.AsObject;
   static toObject(includeInstance: boolean, msg: EvtNewChatMessage): EvtNewChatMessage.AsObject;
@@ -368,6 +371,7 @@ export class EvtNewChatMessage extends jspb.Message {
 export namespace EvtNewChatMessage {
   export type AsObject = {
     chatMessage?: ChatMessage.AsObject,
+    roomName: string,
   }
 }
 

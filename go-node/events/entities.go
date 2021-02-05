@@ -14,17 +14,20 @@ type Event interface {
 
 // NewMessage occurs when a new message is received from a subscribed room (pubsub topic).
 type NewMessage struct {
-	Message entities.Message
+	Message  entities.Message
+	RoomName string
 }
 
 func (e *NewMessage) MarshalToProtobuf() *apigen.Event {
 	return &apigen.Event{
 		Type: apigen.Event_NEW_CHAT_MESSAGE,
 		NewChatMessage: &apigen.EvtNewChatMessage{
-			ChatMessage: &apigen.ChatMessage{SenderId: e.Message.SenderID.Pretty(),
+			ChatMessage: &apigen.ChatMessage{
+				SenderId:  e.Message.SenderID.Pretty(),
 				Timestamp: e.Message.Timestamp.Unix(),
 				Value:     e.Message.Value,
 			},
+			RoomName: e.RoomName,
 		},
 	}
 }

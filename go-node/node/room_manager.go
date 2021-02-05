@@ -385,7 +385,11 @@ func (r *RoomManager) roomSubscriptionHandler(room *Room) {
 				continue
 			}
 
-			if err := r.eventPublisher.Publish(&events.NewMessage{Message: chatMessage}); err != nil {
+			err := r.eventPublisher.Publish(&events.NewMessage{
+				Message:  chatMessage,
+				RoomName: room.name,
+			})
+			if err != nil {
 				r.logger.Error("failed publishing room manager event", zap.Error(err))
 			}
 

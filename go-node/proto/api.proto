@@ -32,8 +32,8 @@ message SendMessageResponse {
 
 message ChatMessage {
   string sender_id = 1;
-  int64 timestamp = 3;
-  string value = 4;
+  int64 timestamp = 2;
+  string value = 3;
 }
 
 
@@ -78,6 +78,7 @@ message SubscribeToEventsRequest {}
 // Events
 message EvtNewChatMessage {
   ChatMessage chat_message = 1;
+  string room_name = 2;
 }
 message EvtPeerJoined {
   string room_name = 1;
