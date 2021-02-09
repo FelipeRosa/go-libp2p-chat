@@ -13,6 +13,7 @@ import (
 	"github.com/FelipeRosa/go-libp2p-chat/go-node/api"
 	apigen "github.com/FelipeRosa/go-libp2p-chat/go-node/gen/api"
 	"github.com/FelipeRosa/go-libp2p-chat/go-node/node"
+	"github.com/ipfs/go-log"
 
 	"github.com/multiformats/go-multiaddr"
 	"github.com/pkg/errors"
@@ -30,6 +31,17 @@ type cfg struct {
 }
 
 func main() {
+	logLevelString := os.Getenv("LOG_LEVEL")
+	if logLevelString == "" {
+		logLevelString = "INFO"
+	}
+
+	logLevel, err := log.LevelFromString(logLevelString)
+	if err != nil {
+		panic(err)
+	}
+	log.SetAllLoggers(logLevel)
+
 	cfg, err := parseArgs()
 	if err != nil {
 		panic(err)
