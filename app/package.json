@@ -14,7 +14,7 @@
   "license": "ISC",
   "devDependencies": {
     "@types/react": "^17.0.1",
-    "@types/react-dom": "^17.0.0",
+    "@types/react-dom": "^17.0.1",
     "css-loader": "^5.0.2",
     "electron": "^11.2.3",
     "electron-installer-dmg": "^3.0.0",
