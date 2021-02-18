@@ -32,7 +32,7 @@
     "webpack-cli": "^4.5.0"
   },
   "dependencies": {
-    "@grpc/grpc-js": "^1.2.7",
+    "@grpc/grpc-js": "^1.2.8",
     "electron-installer-debian": "^3.1.0",
     "get-port": "^5.1.1",
     "google-protobuf": "^3.14.0",
