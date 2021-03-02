@@ -15,7 +15,7 @@
   "devDependencies": {
     "@types/react": "^17.0.2",
     "@types/react-dom": "^17.0.0",
-    "css-loader": "^5.0.2",
+    "css-loader": "^5.1.1",
     "electron": "^11.3.0",
     "electron-installer-dmg": "^3.0.0",
     "electron-installer-redhat": "^3.3.0",
