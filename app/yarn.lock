@@ -1543,10 +1543,10 @@ google-p12-pem@^3.0.3:
   dependencies:
     node-forge "^0.10.0"
 
-google-protobuf@^3.15.1, google-protobuf@^3.6.1:
-  version "3.15.1"
-  resolved "https://registry.yarnpkg.com/google-protobuf/-/google-protobuf-3.15.1.tgz#b45d42ece48973a9e5e3366b4cbcf85ee6314f94"
-  integrity sha512-Ss2fADC0TpZXn6bqGgPJMUWoD1y9J7BTtJRVvf+quNxXRtQnrpubiFCdgoown+OetNsU4H3YbJgnpxYY/3kH6g==
+google-protobuf@^3.15.4, google-protobuf@^3.6.1:
+  version "3.15.4"
+  resolved "https://registry.yarnpkg.com/google-protobuf/-/google-protobuf-3.15.4.tgz#014dc3da8957b0ec147bab6f560cc4cdef47741f"
+  integrity sha512-szktYSHUV9D+ZY1FbS+zvJLdkT+OsZ0HIr4PPP3Tgi9kYpJAPcvY9H2uEsRvJkeHzMAzOS+F1sueFIMrDbcjLw==
 
 got@^9.6.0:
   version "9.6.0"
