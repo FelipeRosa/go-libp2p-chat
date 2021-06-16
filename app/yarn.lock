@@ -1570,10 +1570,10 @@ graceful-fs@^4.1.2, graceful-fs@^4.1.6, graceful-fs@^4.2.0, graceful-fs@^4.2.4:
   resolved "https://registry.yarnpkg.com/graceful-fs/-/graceful-fs-4.2.4.tgz#2256bde14d3632958c465ebc96dc467ca07a29fb"
   integrity sha512-WjKPNJF79dtJAVniUlGGWHYGz2jWxT6VhN/4m1NdkbZ2nOsEF+cI1Edgql5zCRhs/VsQYRvrXctxktVXZUkixw==
 
-grpc-tools@^1.10.0:
-  version "1.10.0"
-  resolved "https://registry.yarnpkg.com/grpc-tools/-/grpc-tools-1.10.0.tgz#687c0599715fc8c02e93496f8f37f89bc9840ef7"
-  integrity sha512-tEbO16TuXV+aJPTMK4FCd4Jw6uzR/wm4h3u27MmZQlWLETp3bL/6KQdVM6xujNx8N1Mbj0/Be2f/0SedzGm0dQ==
+grpc-tools@^1.11.1:
+  version "1.11.1"
+  resolved "https://registry.yarnpkg.com/grpc-tools/-/grpc-tools-1.11.1.tgz#25b3f9f47f4a691b2b1a44ee47e9603c189e2034"
+  integrity sha512-QNz6xuiyBuHXKu78bv5PAOzv/EBKkH54OgeTkHyFkic8TrY8oiifs6hozRJQxJb+L7k+udWYmPvfK76Pgt4JhA==
   dependencies:
     node-pre-gyp "^0.15.0"
 
